@@ -1,11 +1,46 @@
 <?php
-$parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
-require_once( $parse_uri[0] . 'wp-load.php' );
-$tubeserver = strip_tags($_GET['tubeserver']);
-$video = strip_tags($_GET['id']);
-if(!ctype_alnum($tubeserver)){
-  echo 'Invalid info.';
-  exit;
+// Secure WordPress loading
+$wp_load_path = '';
+$current_dir = dirname(__FILE__);
+
+// Look for wp-load.php in parent directories (max 5 levels up for security)
+for ($i = 0; $i < 5; $i++) {
+    $check_path = $current_dir . str_repeat('/..', $i) . '/wp-load.php';
+    if (file_exists($check_path)) {
+        $wp_load_path = $check_path;
+        break;
+    }
+}
+
+if (empty($wp_load_path)) {
+    die('WordPress not found');
+}
+
+require_once($wp_load_path);
+
+// Verify nonce for security
+if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'kenplayer_video_' . (isset($_GET['id']) ? $_GET['id'] : ''))) {
+    wp_die('Security check failed');
+}
+
+// Sanitize and validate input parameters
+$tubeserver = isset($_GET['tubeserver']) ? sanitize_text_field($_GET['tubeserver']) : '';
+$video = isset($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
+
+// Enhanced validation
+if (empty($tubeserver) || empty($video)) {
+    wp_die('Invalid parameters');
+}
+
+// Validate tubeserver against allowed values
+$allowed_servers = array('xvideos', 'youporn', 'pornhub', 'redtube', 'xhamster');
+if (!in_array($tubeserver, $allowed_servers)) {
+    wp_die('Invalid video source');
+}
+
+// Validate video ID format
+if (!preg_match('/^[A-Za-z0-9\-_]+$/', $video)) {
+    wp_die('Invalid video ID');
 }
 
 function curl($url, $referer, $type = null) {

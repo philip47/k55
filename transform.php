@@ -2,16 +2,30 @@
 /*
 Plugin Name: KenPlayer Transformer
 Plugin URI: http://xwpthemes.com
-Description: KenPlayer Transformer - Transforms embedded video players
-Version: 2.1
+Description: KenPlayer Transformer - Transforms embedded video players from adult video sites
+Version: 3.0.0
 Author: Xwpthemes
 Author URI: http://xwpthemes.com
+Requires at least: 5.0
+Tested up to: 6.6
+Requires PHP: 7.4
+Network: false
+License: GPL v2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: kenplayer-transformer
+Domain Path: /languages
 */
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Define plugin constants
+define('KENPLAYER_VERSION', '3.0.0');
+define('KENPLAYER_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('KENPLAYER_PLUGIN_PATH', plugin_dir_path(__FILE__));
+define('KENPLAYER_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 if (!defined('PRODUCT_PREFIX')) {
     define('PRODUCT_PREFIX', 'YWN0aXZhdGVk');
@@ -46,26 +60,66 @@ function kenplayer_set_my_default_settings() {
 register_activation_hook(__FILE__, 'kenplayer_set_my_default_settings');
 
 /**
- * Secure curl implementation
+ * Secure HTTP request implementation with proper validation and caching
  */
 if (!function_exists("ken_connect_curl")) {
-    function ken_connect_curl($url) {
-        // Validate URL
+    function ken_connect_curl($url, $timeout = 10) {
+        // Validate URL and ensure it's HTTPS when possible
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             return false;
         }
         
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_USERAGENT, "XWPCHECKER");
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_ENCODING, "");
-        curl_setopt($curl, CURLOPT_TIMEOUT, 10); // Add timeout
+        // Check if URL is from allowed domains for security
+        $allowed_domains = array(
+            'xvideos.com',
+            'pornhub.com', 
+            'redtube.com',
+            'youporn.com',
+            'xhamster.com',
+            'youtube.com',
+            'drive.google.com'
+        );
         
-        $data = curl_exec($curl);
-        curl_close($curl);
+        $parsed_url = parse_url($url);
+        $domain = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+        $domain = preg_replace('/^www\./', '', $domain);
+        
+        if (!in_array($domain, $allowed_domains)) {
+            return false;
+        }
+        
+        // Check cache first
+        $cache_key = 'kenplayer_curl_' . md5($url);
+        $cached_data = get_transient($cache_key);
+        if ($cached_data !== false) {
+            return $cached_data;
+        }
+        
+        // Use WordPress HTTP API for better security and compatibility
+        $args = array(
+            'timeout' => $timeout,
+            'user-agent' => 'KenPlayer/' . KENPLAYER_VERSION . ' (WordPress)',
+            'sslverify' => true,
+            'headers' => array(
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language' => 'en-US,en;q=0.5',
+                'Accept-Encoding' => 'gzip, deflate'
+            )
+        );
+        
+        $response = wp_remote_get($url, $args);
+        
+        if (is_wp_error($response)) {
+            return false;
+        }
+        
+        $data = wp_remote_retrieve_body($response);
+        
+        // Cache successful responses for 30 minutes
+        if (!empty($data)) {
+            set_transient($cache_key, $data, 30 * MINUTE_IN_SECONDS);
+        }
+        
         return $data;
     }
 }
@@ -91,87 +145,171 @@ if (!function_exists("update_ken_transformer")) {
 }
 
 /**
- * Sanitize plugin options
+ * Sanitize plugin options with enhanced validation
  */
 function sanitize_kenplayer_options($input) {
     if (is_string($input)) {
+        // Special handling for URLs
+        if (filter_var($input, FILTER_VALIDATE_URL)) {
+            return esc_url_raw($input);
+        }
+        // Special handling for HTML content (ads)
+        if (strpos($input, '<') !== false) {
+            return wp_kses($input, array(
+                'a' => array('href' => array(), 'target' => array()),
+                'img' => array('src' => array(), 'alt' => array(), 'width' => array(), 'height' => array()),
+                'div' => array('class' => array(), 'id' => array()),
+                'span' => array('class' => array(), 'id' => array()),
+                'script' => array('src' => array(), 'type' => array()),
+                'iframe' => array('src' => array(), 'width' => array(), 'height' => array(), 'frameborder' => array())
+            ));
+        }
         return sanitize_text_field($input);
     }
     return $input;
 }
 
 /**
- * Enqueue responsive script
+ * Enqueue responsive script with proper versioning and security
  */
-function script_js() {
-    wp_enqueue_script('kenplayer-fluidvids', plugins_url('js/fluidvids.min.js', __FILE__), array(), '1.0.0', true);
+function kenplayer_enqueue_scripts() {
+    // Only load on frontend
+    if (is_admin()) {
+        return;
+    }
     
-    $host = sanitize_text_field($_SERVER['HTTP_HOST']);
-    wp_add_inline_script('kenplayer-fluidvids', "
-        fluidvids.init({
-            selector: ['iframe'],
-            players: ['{$host}']
-        });
-    ");
+    // Check if responsive mode is enabled
+    if (get_option('kenplayer_responsive') !== 'yes') {
+        return;
+    }
+    
+    // Enqueue fluidvids script with proper versioning
+    wp_enqueue_script(
+        'kenplayer-fluidvids', 
+        KENPLAYER_PLUGIN_URL . 'js/fluidvids.js', 
+        array(), 
+        KENPLAYER_VERSION, 
+        true
+    );
+    
+    // Safely add inline script with proper escaping
+    $host = esc_js(sanitize_text_field($_SERVER['HTTP_HOST']));
+    $inline_script = "
+        if (typeof fluidvids !== 'undefined') {
+            fluidvids.init({
+                selector: ['iframe'],
+                players: ['" . $host . "']
+            });
+        }
+    ";
+    
+    wp_add_inline_script('kenplayer-fluidvids', $inline_script);
 }
 
 /**
- * Add TinyMCE button
+ * Add TinyMCE button with proper capability checks
  */
-function shortcode_button($plugin_array) {
-    $plugin_array["kenplayer_button_plugin"] = plugin_dir_url(__FILE__) . "js/tinymce.js";
+function kenplayer_add_tinymce_button($plugin_array) {
+    // Only add for users who can edit posts
+    if (!current_user_can('edit_posts')) {
+        return $plugin_array;
+    }
+    
+    $plugin_array["kenplayer_button_plugin"] = KENPLAYER_PLUGIN_URL . "js/tinymce.js";
     return $plugin_array;
 }
-add_filter("mce_external_plugins", "shortcode_button");
 
 /**
- * Register button in TinyMCE
+ * Register button in TinyMCE with capability checks
  */
-function register_kenplayer_button($buttons) {
+function kenplayer_register_tinymce_button($buttons) {
+    // Only add for users who can edit posts
+    if (!current_user_can('edit_posts')) {
+        return $buttons;
+    }
+    
     array_push($buttons, "kenplayer");
     return $buttons;
 }
 
-// Add responsive script if enabled
-if (get_option('kenplayer_responsive') == 'yes') {
-    add_action('wp_footer', 'script_js', 100);
+/**
+ * Initialize plugin hooks and actions
+ */
+function kenplayer_init() {
+    // Load text domain for translations
+    load_plugin_textdomain('kenplayer-transformer', false, dirname(KENPLAYER_PLUGIN_BASENAME) . '/languages');
+    
+    // Add responsive script if enabled
+    add_action('wp_enqueue_scripts', 'kenplayer_enqueue_scripts');
+    
+    // Add TinyMCE integration for editors
+    add_filter("mce_external_plugins", "kenplayer_add_tinymce_button");
+    add_filter("mce_buttons", "kenplayer_register_tinymce_button");
+}
+add_action('init', 'kenplayer_init');
+
+/**
+ * Process admin form submission securely
+ */
+function kenplayer_process_admin_form() {
+    // This function is called when the form is submitted
+    // WordPress handles the actual saving via settings_fields()
+    // We can add custom validation here if needed
+    
+    // Add success message
+    add_settings_error(
+        'kenplayer_messages',
+        'kenplayer_message',
+        __('Settings saved successfully.', 'kenplayer-transformer'),
+        'updated'
+    );
 }
 
 /**
- * Admin settings page
+ * Admin settings page with enhanced security
  */
 if (!function_exists("kenplayer_config")) {
     function kenplayer_config() {
         // Check user capabilities
         if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to access this page.'));
+            wp_die(__('You do not have sufficient permissions to access this page.', 'kenplayer-transformer'));
+        }
+        
+        // Handle form submission with nonce verification
+        if (isset($_POST['submit']) && check_admin_referer('kenplayer_config_nonce')) {
+            // Process form data securely
+            kenplayer_process_admin_form();
         }
         ?>
         <div class="wrap">
-            <h2>KenPlayer Transformer</h2>
+            <h1><?php echo esc_html__('KenPlayer Transformer Settings', 'kenplayer-transformer'); ?></h1>
+            
+            <?php settings_errors(); ?>
             
             <form method="post" action="options.php">
                 <?php 
                 settings_fields('kenplayer_config');
                 do_settings_sections('kenplayer_config');
+                wp_nonce_field('kenplayer_config_nonce');
                 
-                // Check for cURL and file_get_contents
-                $curl_installed = in_array('curl', get_loaded_extensions());
-                $fopen_enabled = ini_get('allow_url_fopen');
+                // Check for cURL and HTTP capabilities
+                $curl_installed = function_exists('curl_init');
+                $wp_http_available = function_exists('wp_remote_get');
                 ?>
                 
                 <div class="notice notice-info">
                     <p>
+                        <strong><?php esc_html_e('Server Capabilities:', 'kenplayer-transformer'); ?></strong><br>
                         <?php if ($curl_installed): ?>
-                            cURL is <span style="color:blue">installed</span> on this server.
+                            <?php esc_html_e('cURL:', 'kenplayer-transformer'); ?> <span style="color:green"><?php esc_html_e('Available', 'kenplayer-transformer'); ?></span><br>
                         <?php else: ?>
-                            cURL is NOT <span style="color:red">installed</span> on this server.
+                            <?php esc_html_e('cURL:', 'kenplayer-transformer'); ?> <span style="color:red"><?php esc_html_e('Not Available', 'kenplayer-transformer'); ?></span><br>
                         <?php endif; ?>
                         
-                        <?php if ($fopen_enabled): ?>
-                            file_get_content <span style="color:blue">Enabled</span>
+                        <?php if ($wp_http_available): ?>
+                            <?php esc_html_e('WordPress HTTP API:', 'kenplayer-transformer'); ?> <span style="color:green"><?php esc_html_e('Available', 'kenplayer-transformer'); ?></span>
                         <?php else: ?>
-                            file_get_content <span style="color:red">disabled</span>
+                            <?php esc_html_e('WordPress HTTP API:', 'kenplayer-transformer'); ?> <span style="color:red"><?php esc_html_e('Not Available', 'kenplayer-transformer'); ?></span>
                         <?php endif; ?>
                     </p>
                 </div>
@@ -291,86 +429,144 @@ if (!function_exists("kenplayer_config")) {
 }
 
 /**
- * Transform iframe embeds
+ * Transform iframe embeds with enhanced security and performance
  */
 function transformer_iframe($content) {
     // Early return if transformation is disabled
-    if (get_option('kenplayer_activation') != 'yes') {
+    if (get_option('kenplayer_activation') !== 'yes') {
         return $content;
     }
     
-    // Normalize URLs
+    // Cache the transformation result to avoid repeated processing
+    $content_hash = md5($content);
+    $cache_key = 'kenplayer_transform_' . $content_hash;
+    $cached_result = get_transient($cache_key);
+    
+    if ($cached_result !== false) {
+        return $cached_result;
+    }
+    
+    // Normalize URLs safely
     $content = str_replace("redtube.com?id=", "redtube.com/?id=", $content);
     $content = str_replace("www.xvideos.com/embedframe", "flashservice.xvideos.com/embedframe", $content);
     
-    // Define patterns for supported video sites
+    // Define patterns for supported video sites with improved regex
     $tubeservices = array(
-        '\/\/flashservice.(.*).com\/embedframe\/([0-9]+)', /*xvideos.com*/
-        '\/\/www.(.*).com\/embed\/([0-9]+)\/', /*youporn.com*/
-        '\/\/www.(.*).com\/embed\/([A-z0-9]+)', /*pornhub.com*/
-        '\/\/embed.(.*).com\/\?id=([0-9]+)', /*redtube.com*/
+        '\/\/flashservice\.([a-zA-Z0-9\-\.]+)\.com\/embedframe\/([0-9]+)', // xvideos.com
+        '\/\/www\.([a-zA-Z0-9\-\.]+)\.com\/embed\/([0-9]+)\/', // youporn.com
+        '\/\/www\.([a-zA-Z0-9\-\.]+)\.com\/embed\/([A-Za-z0-9\-_]+)', // pornhub.com
+        '\/\/embed\.([a-zA-Z0-9\-\.]+)\.com\/\?id=([0-9]+)', // redtube.com
     );
     
-    // Try to match a supported video embed
-    preg_match('/'. implode('|', $tubeservices) .'/', $content, $result);
+    // Try to match a supported video embed with better validation
+    $pattern = '/(' . implode('|', $tubeservices) . ')/';
+    preg_match($pattern, $content, $result);
+    
+    if (empty($result)) {
+        // Cache negative result for 5 minutes
+        set_transient($cache_key, $content, 5 * MINUTE_IN_SECONDS);
+        return $content;
+    }
+    
+    // Extract and validate video information
     $result = array_values(array_filter($result));
     
-    if (!empty($result)) {
-        $tubeserver = str_replace(array('www.', 'embed.', 'flashservice.'), '', $result[1]);
-        $video = $result[2];
+    if (!empty($result) && count($result) >= 3) {
+        // Sanitize and validate extracted data
+        $tubeserver = sanitize_text_field(str_replace(array('www.', 'embed.', 'flashservice.'), '', $result[1]));
+        $video = sanitize_text_field($result[2]);
+        
+        // Validate video ID format
+        if (empty($video) || !preg_match('/^[A-Za-z0-9\-_]+$/', $video)) {
+            set_transient($cache_key, $content, 5 * MINUTE_IN_SECONDS);
+            return $content;
+        }
         
         $original = "";
+        $allowed_servers = array('xvideos', 'youporn', 'pornhub', 'youtube', 'redtube');
         
         // Check if this video source should be transformed
-        if (($tubeserver == 'xvideos') && (get_option('kenplayer_xvideos') == 'on')) {
-            $original = '//flashservice.xvideos.com/embedframe/' . $video;
-        } elseif (($tubeserver == 'youporn') && (get_option('kenplayer_youporn') == 'on')) {
-            $original = '//www.youporn.com/embed/' . $video;
-        } elseif (($tubeserver == 'pornhub') && (get_option('kenplayer_pornhub') == 'on')) {
-            $original = '//www.pornhub.com/embed/' . $video;
-        } elseif (($tubeserver == 'youtube') && (get_option('kenplayer_youtube') == 'on')) {
-            $original = '//www.youtube.com/embed/' . $video;
-        } elseif (($tubeserver == 'redtube') && (get_option('kenplayer_redtube') == 'on')) {
-            $original = '//embed.redtube.com/?id=' . $video;
+        if (in_array($tubeserver, $allowed_servers)) {
+            switch ($tubeserver) {
+                case 'xvideos':
+                    if (get_option('kenplayer_xvideos') === 'on') {
+                        $original = '//flashservice.xvideos.com/embedframe/' . $video;
+                    }
+                    break;
+                case 'youporn':
+                    if (get_option('kenplayer_youporn') === 'on') {
+                        $original = '//www.youporn.com/embed/' . $video;
+                    }
+                    break;
+                case 'pornhub':
+                    if (get_option('kenplayer_pornhub') === 'on') {
+                        $original = '//www.pornhub.com/embed/' . $video;
+                    }
+                    break;
+                case 'youtube':
+                    if (get_option('kenplayer_youtube') === 'on') {
+                        $original = '//www.youtube.com/embed/' . $video;
+                    }
+                    break;
+                case 'redtube':
+                    if (get_option('kenplayer_redtube') === 'on') {
+                        $original = '//embed.redtube.com/?id=' . $video;
+                    }
+                    break;
+            }
         }
         
         // If we have a match, replace with our custom player
-        if ($original != '') {
+        if (!empty($original)) {
+            // Generate secure player URL with nonce
+            $nonce = wp_create_nonce('kenplayer_video_' . $video);
+            
             // Determine which player to use
-            if (get_option('kenplayer_jwplayer') == 'yes') {
-                $newplayer = plugins_url('/jwplayer/player.php', __FILE__) . 
-                    '?tubeserver=' . urlencode($tubeserver) . 
-                    '&id=' . urlencode($video) . 
-                    '&etc=';
+            if (get_option('kenplayer_jwplayer') === 'yes') {
+                $newplayer = add_query_arg(array(
+                    'tubeserver' => $tubeserver,
+                    'id' => $video,
+                    'nonce' => $nonce
+                ), KENPLAYER_PLUGIN_URL . 'jwplayer/player.php');
                 
-                if (($tubeserver == 'youtube') && (get_option('kenplayer_youtube') == 'on')) {
-                    $newplayer = plugins_url('/jwplayer/player-drive.php', __FILE__) . 
-                        '?tubeserver=' . urlencode(base64_encode('https://www.youtube.com/watch?v=' . $video));
+                if ($tubeserver === 'youtube') {
+                    $newplayer = add_query_arg(array(
+                        'tubeserver' => base64_encode('https://www.youtube.com/watch?v=' . $video),
+                        'nonce' => $nonce
+                    ), KENPLAYER_PLUGIN_URL . 'jwplayer/player-drive.php');
                 }
             } else {
-                $newplayer = plugins_url('/player/player.php', __FILE__) . 
-                    '?tubeserver=' . urlencode($tubeserver) . 
-                    '&id=' . urlencode($video) . 
-                    '&etc=';
+                $newplayer = add_query_arg(array(
+                    'tubeserver' => $tubeserver,
+                    'id' => $video,
+                    'nonce' => $nonce
+                ), KENPLAYER_PLUGIN_URL . 'player/player.php');
                 
-                if (($tubeserver == 'youtube') && (get_option('kenplayer_youtube') == 'on')) {
-                    $newplayer = plugins_url('/player/player-drive.php', __FILE__) . 
-                        '?tubeserver=' . urlencode(base64_encode('https://www.youtube.com/watch?v=' . $video));
+                if ($tubeserver === 'youtube') {
+                    $newplayer = add_query_arg(array(
+                        'tubeserver' => base64_encode('https://www.youtube.com/watch?v=' . $video),
+                        'nonce' => $nonce
+                    ), KENPLAYER_PLUGIN_URL . 'player/player-drive.php');
                 }
             }
             
             // Replace the original embed with our custom player
-            $content = str_replace($original, $newplayer, $content);
+            $content = str_replace($original, esc_url($newplayer), $content);
         }
         
-        // Make URLs protocol-relative and add security attributes to iframes
-        $content = str_replace(array('http:', 'https:'), '', $content);
-        $content = str_replace(
-            'iframe src', 
-            'iframe allowfullscreen="true" sandbox="allow-scripts allow-same-origin" src', 
+        // Add security attributes to iframes and make URLs protocol-relative
+        $content = preg_replace(
+            '/<iframe([^>]*?)src=(["\'])([^"\']*?)\2([^>]*?)>/i',
+            '<iframe$1src=$2$3$2$4 allowfullscreen="true" sandbox="allow-scripts allow-same-origin allow-forms">',
             $content
         );
+        
+        // Make URLs protocol-relative for better HTTPS compatibility
+        $content = preg_replace('/https?:\/\//', '//', $content);
     }
+    
+    // Cache the result for 1 hour
+    set_transient($cache_key, $content, HOUR_IN_SECONDS);
     
     return $content;
 }
@@ -505,6 +701,61 @@ function endsWith($haystack, $needle) {
     
     return (substr($haystack, -$length) === $needle);
 }
+
+/**
+ * Plugin cleanup on uninstall
+ */
+function kenplayer_uninstall() {
+    // Remove all plugin options
+    $options = array(
+        'kenplayer_logo', 'kenplayer_logo_url', 'kenplayer_ads',
+        'kenplayer_poster', 'kenplayer_seconds', 'kenplayer_cache',
+        'kenplayer_activation', 'kenplayer_customfield', 'kenplayer_jwplayer',
+        'kenplayer_xvideos', 'kenplayer_redtube', 'kenplayer_youporn',
+        'kenplayer_pornhub', 'kenplayer_youtube', 'kenplayer_xhamster',
+        'kenplayer_responsive', 'kenplayer_transformer_connect_status_ok',
+        'ken_transformer_license_key_ok'
+    );
+    
+    foreach ($options as $option) {
+        delete_option($option);
+    }
+    
+    // Clear all plugin transients
+    global $wpdb;
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_kenplayer_%'");
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_kenplayer_%'");
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_video_%'");
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_video_%'");
+}
+register_uninstall_hook(__FILE__, 'kenplayer_uninstall');
+
+/**
+ * Plugin deactivation cleanup
+ */
+function kenplayer_deactivate() {
+    // Clear scheduled events if any
+    wp_clear_scheduled_hook('kenplayer_cleanup_cache');
+    
+    // Clear transients
+    global $wpdb;
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_kenplayer_%'");
+    $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_kenplayer_%'");
+}
+register_deactivation_hook(__FILE__, 'kenplayer_deactivate');
+
+/**
+ * Add security headers for player pages
+ */
+function kenplayer_add_security_headers() {
+    if (isset($_GET['kenplayer']) || strpos($_SERVER['REQUEST_URI'], '/player/') !== false) {
+        header('X-Frame-Options: SAMEORIGIN');
+        header('X-Content-Type-Options: nosniff');
+        header('X-XSS-Protection: 1; mode=block');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+    }
+}
+add_action('send_headers', 'kenplayer_add_security_headers');
 
 // Include additional functionality
 include dirname(__FILE__) . "/create_tag_func.php";

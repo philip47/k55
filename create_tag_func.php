@@ -109,9 +109,28 @@ function ken_transformer_get_version() {
 }
 
 /**
- * Secure HTTP request function with caching
+ * Secure HTTP request function with enhanced validation and caching
  */
 function kenplayer_remote_request($url, $referer = '', $type = null) {
+    // Validate URL
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return false;
+    }
+    
+    // Only allow HTTPS URLs for security
+    if (strpos($url, 'https://') !== 0) {
+        return false;
+    }
+    
+    // Validate domain whitelist
+    $allowed_domains = array('xwpthemes.com');
+    $parsed_url = parse_url($url);
+    $domain = isset($parsed_url['host']) ? $parsed_url['host'] : '';
+    
+    if (!in_array($domain, $allowed_domains)) {
+        return false;
+    }
+    
     // Add transient caching to prevent excessive requests
     $cache_key = 'kenplayer_remote_' . md5($url . $type);
     $cached_response = get_transient($cache_key);
@@ -120,36 +139,36 @@ function kenplayer_remote_request($url, $referer = '', $type = null) {
         return $cached_response;
     }
     
-    $response = '';
-    $user_agent = ($type == 'mobile') 
-        ? 'Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D)'
-        : 'Mozilla/5.0 (Windows; U; Windows NT 5.0; en-US; rv:1.4) Gecko/20030624 Netscape/7.1';
+    $user_agent = ($type === 'mobile') 
+        ? 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+        : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
     
-    if (function_exists('curl_init')) {
-        $c = curl_init($url);
-        curl_setopt($c, CURLOPT_USERAGENT, $user_agent);
-        curl_setopt($c, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($c, CURLOPT_TIMEOUT, 10);
-        curl_setopt($c, CURLOPT_REFERER, $referer);
-        curl_setopt($c, CURLOPT_SSL_VERIFYPEER, false);
-        
-        $response = curl_exec($c);
-        curl_close($c);
-    } elseif (ini_get('allow_url_fopen')) {
-        $context = stream_context_create([
-            'http' => [
-                'user_agent' => $user_agent
-            ]
-        ]);
-        $response = @file_get_contents($url, false, $context);
+    // Use WordPress HTTP API for better security
+    $args = array(
+        'timeout' => 10,
+        'user-agent' => $user_agent,
+        'sslverify' => true,
+        'headers' => array(
+            'Referer' => $referer,
+            'Accept' => 'application/xml,text/xml,*/*;q=0.8',
+            'Accept-Language' => 'en-US,en;q=0.5'
+        )
+    );
+    
+    $response = wp_remote_get($url, $args);
+    
+    if (is_wp_error($response)) {
+        return false;
     }
     
-    // Cache the response for 1 hour
-    if (!empty($response)) {
-        set_transient($cache_key, $response, HOUR_IN_SECONDS);
+    $body = wp_remote_retrieve_body($response);
+    
+    // Cache the response for 1 hour if successful
+    if (!empty($body)) {
+        set_transient($cache_key, $body, HOUR_IN_SECONDS);
     }
     
-    return $response;
+    return $body;
 }
 
 /**

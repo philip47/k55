@@ -1,14 +1,46 @@
 <?php
-$parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
-require_once( $parse_uri[0] . 'wp-load.php' );
+// Secure WordPress loading
+$wp_load_path = '';
+$current_dir = dirname(__FILE__);
+
+// Look for wp-load.php in parent directories (max 5 levels up for security)
+for ($i = 0; $i < 5; $i++) {
+    $check_path = $current_dir . str_repeat('/..', $i) . '/wp-load.php';
+    if (file_exists($check_path)) {
+        $wp_load_path = $check_path;
+        break;
+    }
+}
+
+if (empty($wp_load_path)) {
+    die('WordPress not found');
+}
+
+require_once($wp_load_path);
+
+// Verify nonce for security
+if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'kenplayer_video_' . (isset($_GET['id']) ? $_GET['id'] : ''))) {
+    wp_die('Security check failed');
+}
 
 // Sanitize and validate input parameters
-$tubeserver = isset($_GET['tubeserver']) ? strip_tags($_GET['tubeserver']) : '';
-$video = isset($_GET['id']) ? strip_tags($_GET['id']) : '';
+$tubeserver = isset($_GET['tubeserver']) ? sanitize_text_field($_GET['tubeserver']) : '';
+$video = isset($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
 
-if(empty($tubeserver) || empty($video) || !ctype_alnum($tubeserver)){
-  echo 'Invalid info.';
-  exit;
+// Enhanced validation
+if (empty($tubeserver) || empty($video)) {
+    wp_die('Invalid parameters');
+}
+
+// Validate tubeserver against allowed values
+$allowed_servers = array('xvideos', 'youporn', 'pornhub', 'redtube', 'xhamster');
+if (!in_array($tubeserver, $allowed_servers)) {
+    wp_die('Invalid video source');
+}
+
+// Validate video ID format
+if (!preg_match('/^[A-Za-z0-9\-_]+$/', $video)) {
+    wp_die('Invalid video ID');
 }
 
 // Check for cached results first
@@ -18,18 +50,45 @@ $cached_results = get_transient($cache_key);
 if ($cached_results !== false) {
     $resultados = $cached_results;
 } else {
-    function curl($url, $referer, $type = null) {
-        $agent = ($type != null && $type == 'movil') ? 'Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D)' : 'Mozilla/5.0(Windows;U;WindowsNT5.0;en-US;rv:1.4)Gecko/20030624Netscape/7.1(ax)';
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_USERAGENT, $agent);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_REFERER, $referer);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-        $page = curl_exec($ch);
-        curl_close($ch);
-        return $page;
+    function secure_http_request($url, $referer = '', $type = null) {
+        // Validate URL
+        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        
+        // Check if URL is from allowed domains
+        $allowed_domains = array('xvideos.com', 'pornhub.com', 'redtube.com', 'youporn.com', 'xhamster.com');
+        $parsed_url = parse_url($url);
+        $domain = isset($parsed_url['host']) ? preg_replace('/^www\./', '', $parsed_url['host']) : '';
+        
+        if (!in_array($domain, $allowed_domains)) {
+            return false;
+        }
+        
+        $user_agent = ($type === 'mobile') 
+            ? 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+            : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+        
+        // Use WordPress HTTP API for better security
+        $args = array(
+            'timeout' => 15,
+            'user-agent' => $user_agent,
+            'sslverify' => true,
+            'headers' => array(
+                'Referer' => $referer,
+                'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language' => 'en-US,en;q=0.5',
+                'Accept-Encoding' => 'gzip, deflate'
+            )
+        );
+        
+        $response = wp_remote_get($url, $args);
+        
+        if (is_wp_error($response)) {
+            return false;
+        }
+        
+        return wp_remote_retrieve_body($response);
     }
 
     function getstring($string, $start, $end) {
@@ -56,7 +115,8 @@ if ($cached_results !== false) {
 
     function obtenerVideo($tubeserver, $video){
       if($tubeserver == 'xvideos'){
-        $str = curl("http://www.xvideos.com/video" . $video . "/xvideosx", "http://www.xvideos.com", 'movil');
+        $url = "https://www.xvideos.com/video" . $video . "/xvideosx";
+        $str = secure_http_request($url, "https://www.xvideos.com", 'mobile');
         
         if(!$str){return false;}
         $VideoUrlLow = getstring($str, "html5player.setVideoUrlLow('", "');");
@@ -71,74 +131,35 @@ if ($cached_results !== false) {
             $mp4 = $VideoUrlHD;
         }
         $thumbnail = getstring($str, '<meta property="og:image" content="', '"');
-      } elseif($tubeserver == 'foxtube'){
-        $url = 'http://r.foxtube.com/' . $video . '/es/';
-        $str = file_get_contents($url);
-        preg_match("/var v_path = '(.*)';/", $str, $mp4);
-        $mp4 = $mp4[1];
-        $thumbnail = 'http://v.fxtimg.com/' . $video . '/preview.jpg';
-      } elseif($tubeserver == 'pornmaki'){
-        $url = 'http://pornmaki.com/embed/' . $video;
-        $str = file_get_contents($url);
-        preg_match("/label:\"800\", file:\"(.*)\"/", $str, $mp4);
-        preg_match("/var image = \"(.*)\";/", $str, $thumbnail);
-        $mp4 = $mp4[1];
-        $thumbnail = $thumbnail[1];  
-      } elseif($tubeserver == 'befuck'){
-        $source = curl("http://www.befuck.com/player/embed.xml?video_id=" . $video, 'http://www.befuck.com');
-        preg_match('/video_url="(.*)" preview_url/', $source, $mp4);
-        preg_match('/preview_url="(.*)" embed/', $source, $foto);
-        $mp4 = $mp4[1];
-        $thumbnail = $foto[1];
-      } elseif($tubeserver == 'pornoid'){
-        $source = curl("http://www.pornoid.com/player/embed.xml?video_id={$video}", 'http://www.pornoid.com');
-        preg_match('/video_url="(.*)" preview_url/', $source, $mp4);
-        preg_match('/preview_url="(.*)" embed/', $source, $foto);
-        $mp4 = $mp4[1];
-        $thumbnail = $foto[1];
-      } elseif($tubeserver == 'youjizz'){
-        $source = curl("http://www.youjizz.com/videos/a-" . $video . ".html", 'http://www.youjizz.com', 'movil');
-        preg_match('/<a class="preview_thumb" href="(.*)">/', $source, $mp4);
-        preg_match('/<img height="226" width="300" src="(.*)" alt/', $source, $foto);
-        $mp4 = $mp4[1];
-        $thumbnail = $foto[1];
       } elseif($tubeserver == 'youporn'){
-        $url = 'http://www.youporn.com/watch/' . $video . '/';
-        $userAgent = array('http' => array('user_agent' => 'Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D)'));
-        $str = file_get_contents($url, false, stream_context_create($userAgent));
+        $url = 'https://www.youporn.com/watch/' . $video . '/';
+        $str = secure_http_request($url, 'https://www.youporn.com', 'mobile');
         if(!$str){return false;}
         $mp4 = getstring($str, '<video id="player-html5" class=\'videoPlayer\' src="', '"');
         $thumbnail = getstring($str, 'poster="', '"');
       } elseif($tubeserver == 'redtube'){
-        $userAgent = array('http' => array('user_agent' => 'Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D)'));
-        $str = file_get_contents('http://www.redtube.com/' . $video . '/', false, stream_context_create($userAgent));
+        $url = 'https://www.redtube.com/' . $video . '/';
+        $str = secure_http_request($url, 'https://www.redtube.com', 'mobile');
         if(!$str){return false;}
         preg_match('/"videoUrl":"(.*)"/', $str, $mp4);
-        $mp4 = getstring($mp4[1], '"videoUrl":"', '"');
+        if (isset($mp4[1])) {
+            $mp4 = str_replace("\\", "", $mp4[1]);
+        } else {
+            $mp4 = '';
+        }
         $thumbnail = getstring($str, '<meta property="og:image" content="', '"');
-        $mp4 = str_replace("\\", "", $mp4);
-      } elseif($tubeserver == 'tube8'){
-        $source = curl("http://www.tube8.com/a/a/" . $video . "/", 'http://www.tube8.com', 'movil');
-        preg_match('/page_params.video_urls.sd = "(.*)";/', $source, $video);
-        preg_match('/<img id="videoImage" src="(.*)" \/>/', $source, $foto);
-        $mp4 = $video[1];
-        $thumbnail = $foto[1];
       } elseif($tubeserver == 'pornhub'){
         $videos = array();
-        $source = curl("http://www.pornhub.com/view_video.php?viewkey=$video", 'http://pornhub.com', 'movil');
+        $url = "https://www.pornhub.com/view_video.php?viewkey=" . $video;
+        $source = secure_http_request($url, 'https://pornhub.com', 'mobile');
+        if(!$source){return false;}
         $thumbnail = getstring($source, '"image_url":"', '"');
         $videos = get_match_all($source, '"videoUrl":"https:', '"}');
-        $mp4 = 'https:' . $videos[0][1];
-      } elseif($tubeserver == 'xhamster'){
-        $source = curl("http://xhamster.com/xembed.php?video=$video", 'http://xhamster.com');
-        preg_match('/<a target="_blank" class="noFlash" href="(.*)">/', $source, $link);
-        $link = substr($link[1], 0, strpos($link[1], '?'));
-        $source = curl($link, 'http://xhamster.com');
-        preg_match('/<a href="(.*)" class="mp4Thumb" target="_blank">/', $source, $videolink);
-        $thumb = getstring($source, 'class="mp4Thumb" target="_blank"', "<div class='iconPlay'>");
-        
-        $mp4 = $videolink[1];
-        $thumbnail = getstring($thumb, '"', '"');
+        if (isset($videos[0][1])) {
+            $mp4 = 'https:' . $videos[0][1];
+        } else {
+            $mp4 = '';
+        }
       }
       return array($mp4, $thumbnail);
     }
