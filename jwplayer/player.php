@@ -38,8 +38,8 @@ if (!in_array($tubeserver, $allowed_servers)) {
     wp_die('Invalid video source');
 }
 
-// Validate video ID format
-if (!preg_match('/^[A-Za-z0-9\-_]+$/', $video)) {
+// Validate video ID format (allow dots for XVideos)
+if (!preg_match('/^[A-Za-z0-9\-_\.]+$/', $video)) {
     wp_die('Invalid video ID');
 }
 
@@ -81,8 +81,18 @@ function get_match_all($data, $start, $end) {
 function obtenerVideo($tubeserver, $video){
   if($tubeserver == 'xvideos'){
     $userAgent  = array('http' => array('user_agent' => 'Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D)'));
-    //$str = @file_get_contents('https://www.xvideos.com/video'.$video.'/', false, stream_context_create($userAgent) );
-	$str = curl("https://www.xvideos.com/video".$video."/videoxxx", "http://www.xvideos.com", 'movil');
+    
+    // Handle both old numeric format (12345) and new alphanumeric format (ohlvebk93b7)
+    if (strpos($video, '.') === false && is_numeric($video)) {
+        // Old format: numeric ID
+        $video_url = "https://www.xvideos.com/video".$video."/videoxxx";
+    } else {
+        // New format: alphanumeric with or without dot
+        $video_url = "https://www.xvideos.com/video.".$video."/videoxxx";
+    }
+    
+    //$str = @file_get_contents($video_url, false, stream_context_create($userAgent) );
+	$str = curl($video_url, "http://www.xvideos.com", 'movil');
 	
     if(!$str){return false;}
     $VideoUrlLow=getstring($str,"html5player.setVideoUrlLow('","');");
@@ -91,7 +101,10 @@ function obtenerVideo($tubeserver, $video){
     if($VideoUrlHigh!=""){$mp4=$VideoUrlHigh;} else {$mp4=$VideoUrlLow;}
 	if($VideoUrlHD!=""){$mp4=$VideoUrlHD;}
 	/* using toolshot 
-	$data_get=fetchUrl("http://player1.toolshot.com/?url=http://www.xvideos.com/video".$video."/", "http://www.xvideos.com", 'movil');
+	$toolshot_url = (strpos($video, '.') === false && is_numeric($video)) 
+	    ? "http://player1.toolshot.com/?url=http://www.xvideos.com/video".$video."/"
+	    : "http://player1.toolshot.com/?url=http://www.xvideos.com/video.".$video."/";
+	$data_get=fetchUrl($toolshot_url, "http://www.xvideos.com", 'movil');
 	preg_match('#source[^>]+src="([^"]+)"#mis', $data_get, $match);
 	$mp4=$match[1];
 	/* end using toolshot */

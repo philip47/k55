@@ -38,8 +38,8 @@ if (!in_array($tubeserver, $allowed_servers)) {
     wp_die('Invalid video source');
 }
 
-// Validate video ID format
-if (!preg_match('/^[A-Za-z0-9\-_]+$/', $video)) {
+// Validate video ID format (allow dots for XVideos)
+if (!preg_match('/^[A-Za-z0-9\-_\.]+$/', $video)) {
     wp_die('Invalid video ID');
 }
 
@@ -115,7 +115,14 @@ if ($cached_results !== false) {
 
     function obtenerVideo($tubeserver, $video){
       if($tubeserver == 'xvideos'){
-        $url = "https://www.xvideos.com/video" . $video . "/xvideosx";
+        // Handle both old numeric format (12345) and new alphanumeric format (ohlvebk93b7)
+        if (strpos($video, '.') === false && is_numeric($video)) {
+            // Old format: numeric ID
+            $url = "https://www.xvideos.com/video" . $video . "/xvideosx";
+        } else {
+            // New format: alphanumeric with or without dot
+            $url = "https://www.xvideos.com/video." . $video . "/xvideosx";
+        }
         $str = secure_http_request($url, "https://www.xvideos.com", 'mobile');
         
         if(!$str){return false;}

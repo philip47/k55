@@ -65,6 +65,8 @@ All notable changes to KenPlayer Transformer will be documented in this file.
   - SQL injection possibilities
   - **NEW**: "Security check failed" error - added nonce verification to all player files
   - **NEW**: Insecure external API calls in drive players replaced with WordPress HTTP API
+  - **CRITICAL**: Video display issues after security fixes - fixed video ID validation
+  - **CRITICAL**: XVideos URL construction for new alphanumeric format (video.abc123def)
 
 - **Authentication & Authorization**
   - Proper nonce verification for all sensitive operations
@@ -102,9 +104,10 @@ All notable changes to KenPlayer Transformer will be documented in this file.
 #### Security Measures Implemented
 1. **Input Validation**
    - All GET/POST parameters sanitized
-   - Video IDs validated against regex patterns
+   - Video IDs validated against regex patterns (updated to allow dots for XVideos)
    - URL validation for external requests
    - Domain whitelisting for HTTP requests
+   - **FIXED**: Video ID validation regex updated from `/^[A-Za-z0-9\-_]+$/` to `/^[A-Za-z0-9\-_\.]+$/`
 
 2. **Output Protection**
    - All output properly escaped
