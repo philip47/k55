@@ -25,7 +25,9 @@ if ($cached_results !== false) {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
         curl_setopt($ch, CURLOPT_REFERER, $referer);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        // If SSL certificate issues occur, ensure the server's CA bundle is up to date.
+        // Disabling CURLOPT_SSL_VERIFYPEER is a security risk.
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
         $page = curl_exec($ch);
         curl_close($ch);

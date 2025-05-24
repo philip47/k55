@@ -8,8 +8,8 @@ header("X-XSS-Protection: 1; mode=block");
 header("Content-Security-Policy: default-src 'self'; script-src 'self' https://ajax.googleapis.com; img-src 'self' https://i.imgur.com data:;");
 
 // Validate and sanitize input parameters
-$tubeserver = isset($_GET['tubeserver']) ? filter_var($_GET['tubeserver'], FILTER_SANITIZE_STRING) : '';
-$video = isset($_GET['id']) ? filter_var($_GET['id'], FILTER_SANITIZE_STRING) : '';
+$tubeserver = isset($_GET['tubeserver']) ? htmlspecialchars($_GET['tubeserver']) : '';
+$video = isset($_GET['id']) ? htmlspecialchars($_GET['id']) : '';
 
 // More strict validation
 if(!ctype_alnum($tubeserver) || empty($tubeserver)) {

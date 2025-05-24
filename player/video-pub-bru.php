@@ -1,8 +1,8 @@
 <?php
 $parse_uri = explode('wp-content', $_SERVER['SCRIPT_FILENAME']);
 require_once($parse_uri[0] . 'wp-load.php');
-$tubeserver = strip_tags($_GET['tubeserver']);
-$video = strip_tags($_GET['id']);
+$tubeserver = isset($_GET['tubeserver']) ? sanitize_text_field($_GET['tubeserver']) : '';
+$video = isset($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
 if (!ctype_alnum($tubeserver)) {
     echo 'Erro.';
     exit;

@@ -57,5 +57,6 @@ if (get_option('ken_transformer_importer_connect_status')) {
     <input type="hidden" name="type" value="update_options" />
     <div id="formstatus"></div>
     <div id="loading">LOADING!</div>
+    <?php wp_nonce_field('ken_connect_form_action'); ?>
 </form>
 </div>

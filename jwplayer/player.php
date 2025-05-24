@@ -1,8 +1,8 @@
 <?php
 $parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
 require_once( $parse_uri[0] . 'wp-load.php' );
-$tubeserver = strip_tags($_GET['tubeserver']);
-$video = strip_tags($_GET['id']);
+$tubeserver = isset($_GET['tubeserver']) ? sanitize_text_field($_GET['tubeserver']) : '';
+$video = isset($_GET['id']) ? sanitize_text_field($_GET['id']) : '';
 if(!ctype_alnum($tubeserver)){
   echo 'Invalid info.';
   exit;
@@ -15,7 +15,9 @@ function curl($url, $referer, $type = null) {
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_setopt($ch, CURLOPT_REFERER, $referer);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    // If SSL certificate issues occur, ensure the server's CA bundle is up to date.
+    // Disabling CURLOPT_SSL_VERIFYPEER is a security risk.
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
     $page = curl_exec($ch);
     curl_close($ch);

@@ -7,7 +7,7 @@ $tubeserver = base64_decode($_GET['tubeserver']);
 $mp4 = $tubeserver;
 
 $uploads = wp_upload_dir();
-$sefurL = get_bloginfo('template_url', true);
+$sefurL = get_template_directory_uri();
 $logoimage = get_option( 'kenplayer_logo' ); 
 $logolink = get_site_url(); 
 $skin = 'six'; 
@@ -98,7 +98,7 @@ var jw = jwplayer("jwplayer").setup({
     },
 
 	related: {
-      file: "<?php bloginfo('url'); ?>/<?php $category = get_the_category($post->ID); echo $category[0]->category_nicename; ?>/?feed=related-feed"
+      file: "<?php echo home_url(); ?>/<?php $category = get_the_category($post->ID); echo $category[0]->category_nicename; ?>/?feed=related-feed"
    }    
    }); 
 <?php if (get_option('kenplayer_ads') <> '') { ?>  
