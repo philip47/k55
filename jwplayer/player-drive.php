@@ -1,29 +1,41 @@
 <?php
 $parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
 require_once( $parse_uri[0] . 'wp-load.php' );
-$tubeserver = base64_decode($_GET['tubeserver']);
+
+// Verify nonce for security
+if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'kenplayer_video_drive')) {
+    wp_die('Security check failed');
+}
+
+// Sanitize and validate input
+if (!isset($_GET['tubeserver'])) {
+    wp_die('Invalid parameters');
+}
+
+$tubeserver = base64_decode(sanitize_text_field($_GET['tubeserver']));
 if ($tubeserver == null){
   echo 'Invalid info.';
   exit;
-}function curl($url) {
-	$ch = @curl_init();
-	curl_setopt($ch, CURLOPT_URL, $url);
-	$head[] = "Connection: keep-alive";
-	$head[] = "Keep-Alive: 300";
-	$head[] = "Accept-Charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7";
-	$head[] = "Accept-Language: en-us,en;q=0.5";
-	curl_setopt($ch, CURLOPT_USERAGENT, 'XWPCHECKER');
-	curl_setopt($ch, CURLOPT_HTTPHEADER, $head);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, FALSE);
-	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-	curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
-	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-	curl_setopt($ch, CURLOPT_HTTPHEADER, array('Expect:'));
-	$page = curl_exec($ch);
-	curl_close($ch);
-	return $page;
+}
+
+function secure_http_get($url) {
+    // Use WordPress HTTP API for secure requests
+    $response = wp_remote_get($url, array(
+        'timeout' => 30,
+        'user-agent' => 'KenPlayer/3.0.0',
+        'headers' => array(
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language' => 'en-us,en;q=0.5',
+        ),
+        'sslverify' => true,
+        'redirection' => 5
+    ));
+    
+    if (is_wp_error($response)) {
+        return false;
+    }
+    
+    return wp_remote_retrieve_body($response);
 }
 function getstring($string,$start,$end){
 $str = explode($start,$string);

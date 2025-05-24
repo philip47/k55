@@ -676,12 +676,14 @@ function shortcode_videos_transformer($atts, $link = null) {
             $video = $matches[1];
         }
     } elseif (endsWith($link, '.mp4') || endsWith($link, '.flv') || endsWith($link, '.webm') || endsWith($link, '.m4v')) {
+        $encoded_link = base64_encode($link);
+        $nonce = wp_create_nonce('kenplayer_video_direct');
         if (get_option('kenplayer_jwplayer') == 'yes') {
             $urlPlayer = plugins_url("jwplayer/player-direct.php", __FILE__) . 
-                "?tubeserver=" . urlencode(base64_encode($link));
+                "?tubeserver=" . urlencode($encoded_link) . "&nonce=" . urlencode($nonce);
         } else {
             $urlPlayer = plugins_url("player/player-direct.php", __FILE__) . 
-                "?tubeserver=" . urlencode(base64_encode($link));
+                "?tubeserver=" . urlencode($encoded_link) . "&nonce=" . urlencode($nonce);
         }
     }
     
@@ -689,31 +691,41 @@ function shortcode_videos_transformer($atts, $link = null) {
     if (empty($urlPlayer)) {
         if (get_option('kenplayer_jwplayer') == 'yes') {
             if ($tubeserver != "" && $video != "") {
+                $nonce = wp_create_nonce('kenplayer_video_' . $video);
                 $urlPlayer = plugins_url("jwplayer/player.php", __FILE__) . 
                     "?tubeserver=" . urlencode($tubeserver) . 
-                    "&id=" . urlencode($video);
+                    "&id=" . urlencode($video) . 
+                    "&nonce=" . urlencode($nonce);
             }
             
             // Check for other supported services
             foreach ($datas as $data) {
                 if (stristr($link, $data)) {
+                    $encoded_link = base64_encode($link);
+                    $nonce = wp_create_nonce('kenplayer_video_drive');
                     $urlPlayer = plugins_url("jwplayer/player-drive.php", __FILE__) . 
-                        "?tubeserver=" . urlencode(base64_encode($link));
+                        "?tubeserver=" . urlencode($encoded_link) . 
+                        "&nonce=" . urlencode($nonce);
                     break;
                 }
             }
         } else {
             if ($tubeserver != "" && $video != "") {
+                $nonce = wp_create_nonce('kenplayer_video_' . $video);
                 $urlPlayer = plugins_url("player/player.php", __FILE__) . 
                     "?tubeserver=" . urlencode($tubeserver) . 
-                    "&id=" . urlencode($video);
+                    "&id=" . urlencode($video) . 
+                    "&nonce=" . urlencode($nonce);
             }
             
             // Check for other supported services
             foreach ($datas as $data) {
                 if (stristr($link, $data)) {
+                    $encoded_link = base64_encode($link);
+                    $nonce = wp_create_nonce('kenplayer_video_drive');
                     $urlPlayer = plugins_url("player/player-drive.php", __FILE__) . 
-                        "?tubeserver=" . urlencode(base64_encode($link));
+                        "?tubeserver=" . urlencode($encoded_link) . 
+                        "&nonce=" . urlencode($nonce);
                     break;
                 }
             }

@@ -1,7 +1,18 @@
 <?php
 $parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
 require_once( $parse_uri[0] . 'wp-load.php' );
-$tubeserver = base64_decode($_GET['tubeserver']);
+
+// Verify nonce for security
+if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'kenplayer_video_direct')) {
+    wp_die('Security check failed');
+}
+
+// Sanitize and validate input
+if (!isset($_GET['tubeserver'])) {
+    wp_die('Invalid parameters');
+}
+
+$tubeserver = base64_decode(sanitize_text_field($_GET['tubeserver']));
 
 
 $mp4 = $tubeserver;
