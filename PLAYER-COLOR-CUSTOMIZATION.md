@@ -2,260 +2,394 @@
 
 ## 🎨 How to Change Player Colors
 
-There are several ways to customize the colors of both VideoJS and JWPlayer in the KenPlayer Transformer plugin.
+The KenPlayer Transformer plugin supports color customization for both VideoJS and JWPlayer. Here's how to customize the colors for each player type.
 
-## 📹 VideoJS Player Color Customization
+## 📋 Table of Contents
+1. [VideoJS Color Customization](#videojs-color-customization)
+2. [JWPlayer Color Customization](#jwplayer-color-customization)
+3. [Adding Color Settings to Admin Panel](#adding-color-settings-to-admin-panel)
+4. [Custom CSS Examples](#custom-css-examples)
+5. [Available JWPlayer Skins](#available-jwplayer-skins)
 
-### Method 1: Using VideoJS Themes (Easiest)
+---
 
-The VideoJS player currently uses the "Fantasy" theme. You can change this by editing `/player/player.php`:
+## 🎬 VideoJS Color Customization
 
-**Current theme (line 288):**
-```html
-<link href="https://unpkg.com/@videojs/themes@1/dist/fantasy/index.css" rel="stylesheet">
+### Method 1: Edit VideoJS CSS File
+Edit `/video-js/video-js.css` to change default colors:
+
+```css
+/* Main player text color */
+.vjs-default-skin {
+  color: #cccccc; /* Change to your preferred color */
+}
+
+/* Control bar background */
+.vjs-default-skin .vjs-control-bar {
+  background-color: rgba(7,20,30,0.7); /* Dark blue background */
+}
+
+/* Progress bar colors */
+.vjs-default-skin .vjs-play-progress {
+  background-color: #ff6b6b; /* Red progress bar */
+}
+
+.vjs-default-skin .vjs-load-progress {
+  background-color: rgba(255,255,255,0.4); /* Light buffer bar */
+}
+
+/* Volume and seek bar background */
+.vjs-default-skin .vjs-slider {
+  background-color: rgba(51, 51, 51, 0.9); /* Dark background */
+}
+
+/* Button hover effects */
+.vjs-default-skin .vjs-control:hover {
+  color: #ff6b6b; /* Red hover color */
+}
 ```
 
-**Available VideoJS themes:**
-```html
-<!-- City Theme (Blue/Gray) -->
-<link href="https://unpkg.com/@videojs/themes@1/dist/city/index.css" rel="stylesheet">
+### Method 2: Create Custom CSS File
+Create a new file `/video-js/custom-colors.css`:
 
-<!-- Forest Theme (Green) -->
-<link href="https://unpkg.com/@videojs/themes@1/dist/forest/index.css" rel="stylesheet">
+```css
+/* Custom VideoJS Theme - Dark Red */
+.vjs-default-skin {
+  color: #ffffff;
+}
 
-<!-- Sea Theme (Blue) -->
-<link href="https://unpkg.com/@videojs/themes@1/dist/sea/index.css" rel="stylesheet">
+.vjs-default-skin .vjs-control-bar {
+  background: linear-gradient(to bottom, rgba(20,20,20,0.8), rgba(10,10,10,0.9));
+}
 
-<!-- Fantasy Theme (Purple/Pink) - Current -->
-<link href="https://unpkg.com/@videojs/themes@1/dist/fantasy/index.css" rel="stylesheet">
+.vjs-default-skin .vjs-play-progress {
+  background-color: #e74c3c; /* Red progress */
+}
+
+.vjs-default-skin .vjs-volume-level {
+  background-color: #e74c3c; /* Red volume */
+}
+
+.vjs-default-skin .vjs-big-play-button {
+  background-color: rgba(231,76,60,0.8);
+  border-color: #e74c3c;
+}
+
+.vjs-default-skin .vjs-big-play-button:hover {
+  background-color: rgba(231,76,60,1);
+}
 ```
 
-### Method 2: Custom CSS Override
+---
 
-Add custom CSS after the theme link in `/player/player.php`:
+## 🎯 JWPlayer Color Customization
 
-```html
-<style>
-/* Custom VideoJS Colors */
-.video-js .vjs-control-bar {
-    background-color: #your-color !important; /* Control bar background */
-}
+### Available Skins
+The plugin includes several pre-built JWPlayer skins in `/jwplayer/skins/`:
 
-.video-js .vjs-progress-control .vjs-progress-holder {
-    background-color: #your-color !important; /* Progress bar background */
-}
+1. **beelden.css** - Clean modern look
+2. **bekle.css** - Minimalist design
+3. **five.css** - Colorful theme
+4. **glow.css** - Dark theme with glow effects
+5. **roundster.css** - Rounded elements
+6. **seven.css** - Red accent theme
+7. **six.css** - Blue theme
+8. **stormtrooper.css** - Black and white
+9. **vapor.css** - Purple/pink theme
 
-.video-js .vjs-progress-control .vjs-play-progress {
-    background-color: #your-color !important; /* Progress bar fill */
-}
-
-.video-js .vjs-volume-control .vjs-volume-bar {
-    background-color: #your-color !important; /* Volume bar */
-}
-
-.video-js .vjs-button > .vjs-icon-placeholder:before {
-    color: #your-color !important; /* Button icons */
-}
-
-.video-js .vjs-big-play-button {
-    background-color: #your-color !important; /* Big play button */
-    border-color: #your-color !important;
-}
-</style>
-```
-
-### Method 3: Create Custom VideoJS Skin
-
-1. Create a new CSS file in `/video-js/` folder (e.g., `custom-skin.css`)
-2. Replace the theme link with your custom CSS file
-3. Use VideoJS skin generator: http://designer.videojs.com
-
-## 🎬 JWPlayer Color Customization
-
-### Method 1: Using Built-in Skins (Easiest)
-
-The plugin includes several JWPlayer skins in `/jwplayer/skins/`:
-
-- `glow.css` - Dark theme with white controls
-- `beelden.css` - Custom theme
-- `bekle.css` - Custom theme  
-- `five.css` - Custom theme
-- `roundster.css` - Rounded theme
-- `seven.css` - Custom theme
-- `six.css` - Custom theme
-- `stormtrooper.css` - Dark theme
-- `vapor.css` - Light theme
-
-**To apply a skin, edit `/jwplayer/player.php` and add before the JWPlayer setup:**
-
-```html
-<link rel="stylesheet" href="skins/glow.css" type="text/css" />
-```
-
-**Then add the skin class to the JWPlayer setup:**
+### Method 1: Use Existing Skins
+To use a different skin, modify the JWPlayer setup in `/jwplayer/player.php`:
 
 ```javascript
 var jw = jwplayer("jwplayer").setup({
-    // ... existing config ...
+    // ... other settings ...
     skin: {
-        name: "glow"  // or any other skin name
+        name: "seven" // Use the seven.css skin (red theme)
     }
 });
 ```
 
-### Method 2: Custom JWPlayer Colors
+### Method 2: Create Custom JWPlayer Skin
+Create a new file `/jwplayer/skins/custom.css`:
 
-Add custom CSS in `/jwplayer/player.php`:
-
-```html
-<style>
-/* Custom JWPlayer Colors */
-.jw-skin-custom .jw-controlbar {
-    background: #your-color !important; /* Control bar */
+```css
+/* Custom JWPlayer Skin - Blue Theme */
+.jw-skin-custom .jw-background-color {
+    background: #2c3e50; /* Dark blue background */
 }
 
-.jw-skin-custom .jw-progress {
-    background: #your-color !important; /* Progress bar */
+.jw-skin-custom .jw-controlbar {
+    background: rgba(52, 73, 94, 0.8); /* Blue control bar */
+}
+
+.jw-skin-custom .jw-text {
+    color: #ecf0f1; /* Light text */
 }
 
 .jw-skin-custom .jw-button-color {
-    color: #your-color !important; /* Button colors */
+    color: #3498db; /* Blue buttons */
 }
 
-.jw-skin-custom .jw-display-icon-container {
-    background: #your-color !important; /* Play button background */
+.jw-skin-custom .jw-button-color:hover {
+    color: #5dade2; /* Light blue on hover */
+}
+
+.jw-skin-custom .jw-progress {
+    background: #3498db; /* Blue progress bar */
 }
 
 .jw-skin-custom .jw-rail {
-    background: #your-color !important; /* Progress rail */
+    background-color: #34495e; /* Dark rail */
 }
-</style>
+
+.jw-skin-custom .jw-buffer {
+    background-color: #7f8c8d; /* Gray buffer */
+}
 ```
 
-**Then apply the custom skin:**
+Then use it in the player:
 
 ```javascript
 var jw = jwplayer("jwplayer").setup({
-    // ... existing config ...
+    // ... other settings ...
     skin: {
         name: "custom"
     }
 });
 ```
 
-## 🛠️ Implementation Steps
+---
 
-### For VideoJS Player:
+## ⚙️ Adding Color Settings to Admin Panel
 
-1. **Edit file:** `/player/player.php`
-2. **Find line 288:** `<link href="https://unpkg.com/@videojs/themes@1/dist/fantasy/index.css" rel="stylesheet">`
-3. **Replace with desired theme or add custom CSS**
+To add color customization to the WordPress admin panel, add this to `transform.php`:
 
-### For JWPlayer:
+### 1. Add Settings Fields
 
-1. **Edit file:** `/jwplayer/player.php`
-2. **Add skin CSS link** before the `<script>` section
-3. **Add skin configuration** to the JWPlayer setup around line 459
-
-## 🎨 Popular Color Schemes
-
-### Dark Theme
-```css
-/* Control bar: #1a1a1a */
-/* Progress: #ff6b6b */
-/* Buttons: #ffffff */
-/* Background: #000000 */
-```
-
-### Blue Theme  
-```css
-/* Control bar: #2c3e50 */
-/* Progress: #3498db */
-/* Buttons: #ecf0f1 */
-/* Background: #34495e */
-```
-
-### Red Theme
-```css
-/* Control bar: #2c1810 */
-/* Progress: #e74c3c */
-/* Buttons: #ffffff */
-/* Background: #8b0000 */
-```
-
-### Purple Theme (Current Fantasy)
-```css
-/* Control bar: #663399 */
-/* Progress: #ff69b4 */
-/* Buttons: #ffffff */
-/* Background: #4b0082 */
-```
-
-## 🔧 Adding Color Options to Admin Panel
-
-To add color customization to the WordPress admin panel, you can modify `/transform.php`:
-
-1. **Add new settings fields** in the `kenplayer_config()` function
-2. **Add color picker inputs** for different player elements
-3. **Use the saved colors** in the player files
-
-### Example Admin Color Picker:
+Add to the settings form in `kenplayer_config()` function:
 
 ```php
-// Add to settings table in transform.php
 <tr>
-    <th scope="row">Player Primary Color</th>
+    <th scope="row">Player Theme Color</th>
     <td>
-        <input type="color" name="kenplayer_primary_color" value="<?php echo get_option('kenplayer_primary_color', '#663399'); ?>" />
-        <p class="description">Choose the primary color for the video player</p>
+        <select name="kenplayer_theme_color">
+            <option value="default" <?php selected(get_option('kenplayer_theme_color'), 'default'); ?>>Default</option>
+            <option value="red" <?php selected(get_option('kenplayer_theme_color'), 'red'); ?>>Red</option>
+            <option value="blue" <?php selected(get_option('kenplayer_theme_color'), 'blue'); ?>>Blue</option>
+            <option value="green" <?php selected(get_option('kenplayer_theme_color'), 'green'); ?>>Green</option>
+            <option value="purple" <?php selected(get_option('kenplayer_theme_color'), 'purple'); ?>>Purple</option>
+            <option value="orange" <?php selected(get_option('kenplayer_theme_color'), 'orange'); ?>>Orange</option>
+        </select>
+        <p class="description">Choose a color theme for the video player</p>
+    </td>
+</tr>
+
+<tr>
+    <th scope="row">JWPlayer Skin</th>
+    <td>
+        <select name="kenplayer_jwplayer_skin">
+            <option value="default" <?php selected(get_option('kenplayer_jwplayer_skin'), 'default'); ?>>Default</option>
+            <option value="glow" <?php selected(get_option('kenplayer_jwplayer_skin'), 'glow'); ?>>Glow (Dark)</option>
+            <option value="seven" <?php selected(get_option('kenplayer_jwplayer_skin'), 'seven'); ?>>Seven (Red)</option>
+            <option value="six" <?php selected(get_option('kenplayer_jwplayer_skin'), 'six'); ?>>Six (Blue)</option>
+            <option value="vapor" <?php selected(get_option('kenplayer_jwplayer_skin'), 'vapor'); ?>>Vapor (Purple)</option>
+            <option value="stormtrooper" <?php selected(get_option('kenplayer_jwplayer_skin'), 'stormtrooper'); ?>>Stormtrooper (B&W)</option>
+        </select>
+        <p class="description">Choose a skin for JWPlayer (only applies when JWPlayer is selected)</p>
     </td>
 </tr>
 ```
 
-### Use in Player Files:
+### 2. Update Settings Validation
+
+Add to `kenplayer_validate_settings()` function:
 
 ```php
-// In player.php files
-$primary_color = get_option('kenplayer_primary_color', '#663399');
+if (isset($input['kenplayer_theme_color'])) {
+    $validated['kenplayer_theme_color'] = sanitize_text_field($input['kenplayer_theme_color']);
+}
+
+if (isset($input['kenplayer_jwplayer_skin'])) {
+    $validated['kenplayer_jwplayer_skin'] = sanitize_text_field($input['kenplayer_jwplayer_skin']);
+}
+```
+
+### 3. Apply Colors in Player Files
+
+Update the player files to use the selected colors:
+
+**For VideoJS** (in `/player/player.php`):
+
+```php
+<?php
+$theme_color = get_option('kenplayer_theme_color', 'default');
+$color_schemes = array(
+    'red' => array('primary' => '#e74c3c', 'secondary' => '#c0392b'),
+    'blue' => array('primary' => '#3498db', 'secondary' => '#2980b9'),
+    'green' => array('primary' => '#2ecc71', 'secondary' => '#27ae60'),
+    'purple' => array('primary' => '#9b59b6', 'secondary' => '#8e44ad'),
+    'orange' => array('primary' => '#f39c12', 'secondary' => '#e67e22'),
+    'default' => array('primary' => '#ffffff', 'secondary' => '#cccccc')
+);
+$colors = $color_schemes[$theme_color];
 ?>
+
 <style>
-.video-js .vjs-control-bar {
-    background-color: <?php echo esc_attr($primary_color); ?> !important;
+.vjs-default-skin .vjs-play-progress {
+    background-color: <?php echo $colors['primary']; ?> !important;
+}
+.vjs-default-skin .vjs-volume-level {
+    background-color: <?php echo $colors['primary']; ?> !important;
+}
+.vjs-default-skin .vjs-big-play-button {
+    background-color: <?php echo $colors['primary']; ?> !important;
+    border-color: <?php echo $colors['secondary']; ?> !important;
 }
 </style>
 ```
 
-## 📱 Responsive Considerations
+**For JWPlayer** (in `/jwplayer/player.php`):
 
-When customizing colors, ensure they work well on:
-- Desktop browsers
-- Mobile devices  
-- Different screen sizes
-- Light and dark environments
+```php
+<?php
+$jwplayer_skin = get_option('kenplayer_jwplayer_skin', 'default');
+if ($jwplayer_skin !== 'default') {
+    echo '<link rel="stylesheet" href="skins/' . esc_attr($jwplayer_skin) . '.css">';
+}
+?>
 
-## 🧪 Testing Your Changes
-
-1. **Clear browser cache** after making changes
-2. **Test on multiple devices** and browsers
-3. **Check contrast ratios** for accessibility
-4. **Verify colors work** with different video content
-
-## 🔄 Backup Before Changes
-
-Always backup your files before making modifications:
-```bash
-cp player/player.php player/player.php.backup
-cp jwplayer/player.php jwplayer/player.php.backup
+<script type="text/javascript">
+var jw = jwplayer("jwplayer").setup({
+    // ... other settings ...
+    <?php if ($jwplayer_skin !== 'default'): ?>
+    skin: {
+        name: "<?php echo esc_js($jwplayer_skin); ?>"
+    },
+    <?php endif; ?>
+    // ... rest of settings ...
+});
+</script>
 ```
-
-## 📞 Need Help?
-
-If you need assistance with color customization:
-1. Check the browser console for CSS errors
-2. Use browser developer tools to test colors
-3. Refer to VideoJS and JWPlayer documentation
-4. Test changes with the debug files provided
 
 ---
 
-**Note:** After making color changes, test both VideoJS and JWPlayer to ensure consistency across both player types.
+## 🎨 Custom CSS Examples
+
+### Dark Theme with Red Accents
+```css
+/* VideoJS Dark Red Theme */
+.vjs-default-skin {
+    color: #ffffff;
+}
+.vjs-default-skin .vjs-control-bar {
+    background: rgba(20, 20, 20, 0.9);
+}
+.vjs-default-skin .vjs-play-progress {
+    background: #ff4757;
+}
+.vjs-default-skin .vjs-big-play-button {
+    background: rgba(255, 71, 87, 0.8);
+}
+```
+
+### Light Theme with Blue Accents
+```css
+/* VideoJS Light Blue Theme */
+.vjs-default-skin {
+    color: #2c3e50;
+}
+.vjs-default-skin .vjs-control-bar {
+    background: rgba(255, 255, 255, 0.9);
+}
+.vjs-default-skin .vjs-play-progress {
+    background: #3498db;
+}
+.vjs-default-skin .vjs-big-play-button {
+    background: rgba(52, 152, 219, 0.8);
+}
+```
+
+### Gradient Theme
+```css
+/* VideoJS Gradient Theme */
+.vjs-default-skin .vjs-control-bar {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+}
+.vjs-default-skin .vjs-play-progress {
+    background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+}
+```
+
+---
+
+## 🔧 Quick Implementation
+
+### Option 1: Simple Color Change (Fastest)
+1. Edit `/video-js/video-js.css`
+2. Find `.vjs-default-skin .vjs-play-progress`
+3. Change `background-color` to your preferred color
+
+### Option 2: Use JWPlayer Skin (Easy)
+1. Go to WordPress Admin → Settings → KenPlayer Config
+2. Change "Custom player" to "JWPlayer"
+3. Edit `/jwplayer/player.php`
+4. Add skin parameter to jwplayer setup:
+```javascript
+skin: { name: "seven" } // for red theme
+```
+
+### Option 3: Full Customization (Advanced)
+1. Create custom CSS file
+2. Add color settings to admin panel
+3. Modify player files to use dynamic colors
+
+---
+
+## 📝 Color Codes Reference
+
+### Popular Color Schemes
+- **Red**: `#e74c3c`, `#c0392b`
+- **Blue**: `#3498db`, `#2980b9`
+- **Green**: `#2ecc71`, `#27ae60`
+- **Purple**: `#9b59b6`, `#8e44ad`
+- **Orange**: `#f39c12`, `#e67e22`
+- **Pink**: `#e91e63`, `#ad1457`
+- **Teal**: `#1abc9c`, `#16a085`
+
+### Adult/Porn Site Color Schemes
+- **PornHub**: `#ff9000`, `#000000`
+- **XVideos**: `#c41230`, `#8b0000`
+- **RedTube**: `#ff0000`, `#cc0000`
+- **YouPorn**: `#ff6600`, `#e55a00`
+
+---
+
+## 🚀 Testing Your Changes
+
+1. **Clear Cache**: Clear any caching plugins
+2. **Test Both Players**: Switch between VideoJS and JWPlayer
+3. **Check Mobile**: Test on mobile devices
+4. **Browser Testing**: Test in different browsers
+
+---
+
+## 💡 Tips
+
+1. **Backup First**: Always backup files before editing
+2. **Use CSS Variables**: For easier maintenance
+3. **Test Contrast**: Ensure text is readable
+4. **Mobile Friendly**: Test on small screens
+5. **Performance**: Minimize CSS file sizes
+
+---
+
+## 🔗 Resources
+
+- [VideoJS Theming Guide](https://docs.videojs.com/tutorial-skins.html)
+- [JWPlayer Skin Reference](https://developer.jwplayer.com/jwplayer/docs/jw8-css-skin-reference)
+- [CSS Color Picker](https://htmlcolorcodes.com/)
+- [Gradient Generator](https://cssgradient.io/)
+
+---
+
+This guide provides multiple methods to customize player colors, from simple edits to advanced admin panel integration. Choose the method that best fits your technical skill level and requirements.
