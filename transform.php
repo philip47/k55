@@ -245,6 +245,9 @@ function kenplayer_init() {
     // Add TinyMCE integration for editors
     add_filter("mce_external_plugins", "kenplayer_add_tinymce_button");
     add_filter("mce_buttons", "kenplayer_register_tinymce_button");
+    
+    // Always register the shortcode so it works even if activation is pending
+    add_shortcode("kenplayer", "shortcode_videos_transformer");
 }
 add_action('init', 'kenplayer_init');
 
@@ -593,6 +596,7 @@ function transformer_end() {
 
 /**
  * Shortcode for embedding videos
+ * Usage: [kenplayer url="VIDEO_URL" width="735" height="400"]
  */
 function shortcode_videos_transformer($atts, $link = null) {
     // Extract attributes
@@ -601,6 +605,16 @@ function shortcode_videos_transformer($atts, $link = null) {
         'width' => '735',
         'height' => '400'
     ), $atts);
+    
+    // Debug: If no URL provided, show usage instructions
+    if (empty($atts['url']) && empty($link)) {
+        return '<div style="border: 2px dashed #ccc; padding: 15px; margin: 10px 0; background: #f9f9f9;">
+            <strong>KenPlayer Shortcode Usage:</strong><br>
+            <code>[kenplayer url="VIDEO_URL"]</code><br>
+            <small>Supported sites: XVideos, Pornhub, RedTube, YouPorn, direct MP4/FLV files, Google Drive, YouTube</small><br>
+            <small>Optional parameters: width="735" height="400"</small>
+        </div>';
+    }
     
     $link = $atts['url'];
     $width = intval($atts['width']);
@@ -687,7 +701,12 @@ function shortcode_videos_transformer($atts, $link = null) {
         return '<iframe src="' . esc_url($urlPlayer) . '" frameborder="0" allowfullscreen mozallowfullscreen webkitallowfullscreen msallowfullscreen width="' . esc_attr($width) . '" height="' . esc_attr($height) . '"></iframe>';
     }
     
-    return '<!-- No valid video URL provided -->';
+    // Debug: Show what URL was provided and why it failed
+    return '<div style="border: 2px solid #ff6b6b; padding: 15px; margin: 10px 0; background: #ffe6e6; color: #d63031;">
+        <strong>KenPlayer Error:</strong> Unsupported video URL<br>
+        <small>URL provided: ' . esc_html($link) . '</small><br>
+        <small>Supported sites: XVideos, Pornhub, RedTube, YouPorn, direct MP4/FLV files, Google Drive, YouTube</small>
+    </div>';
 }
 
 /**

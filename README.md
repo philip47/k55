@@ -90,9 +90,38 @@ A WordPress plugin that transforms embedded video players from adult video sites
 
 ## Shortcode Usage
 
+Use the `[kenplayer]` shortcode to embed videos in posts and pages:
+
 ```
-[kenplayer url="https://www.xvideos.com/video123456/title" width="735" height="400"]
+[kenplayer url="VIDEO_URL" width="735" height="400"]
 ```
+
+### Supported Parameters:
+- `url` - The video URL (required)
+- `width` - Player width in pixels (default: 735)
+- `height` - Player height in pixels (default: 400)
+
+### Example Usage:
+```
+[kenplayer url="https://www.xvideos.com/video12345/sample-video"]
+[kenplayer url="https://www.pornhub.com/view_video.php?viewkey=abc123" width="800" height="450"]
+[kenplayer url="https://example.com/video.mp4"]
+```
+
+### Troubleshooting Shortcode Issues:
+
+If the shortcode is not working:
+
+1. **Check if shortcode is registered**: Upload `shortcode-test.php` to your WordPress root directory and visit it in your browser
+2. **Verify plugin activation**: Make sure the plugin is activated in WordPress admin
+3. **Check for PHP errors**: Look in your error logs for any PHP errors
+4. **Test with sample URLs**: Use the test file to verify functionality
+
+### Testing the Shortcode:
+
+1. Upload the included `shortcode-test.php` file to your WordPress root directory
+2. Visit `yoursite.com/shortcode-test.php` in your browser
+3. This will show you if the shortcode is working and provide debugging information
 
 ## Developer Notes
 
