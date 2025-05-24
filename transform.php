@@ -252,20 +252,29 @@ function kenplayer_init() {
 add_action('init', 'kenplayer_init');
 
 /**
- * Process admin form submission securely
+ * Settings validation callback
  */
-function kenplayer_process_admin_form() {
-    // This function is called when the form is submitted
-    // WordPress handles the actual saving via settings_fields()
-    // We can add custom validation here if needed
+function kenplayer_validate_settings($input) {
+    $validated = array();
     
-    // Add success message
-    add_settings_error(
-        'kenplayer_messages',
-        'kenplayer_message',
-        __('Settings saved successfully.', 'kenplayer-transformer'),
-        'updated'
-    );
+    // Validate each setting
+    if (isset($input['kenplayer_license'])) {
+        $validated['kenplayer_license'] = sanitize_text_field($input['kenplayer_license']);
+    }
+    
+    if (isset($input['kenplayer_player'])) {
+        $validated['kenplayer_player'] = sanitize_text_field($input['kenplayer_player']);
+    }
+    
+    if (isset($input['kenplayer_width'])) {
+        $validated['kenplayer_width'] = absint($input['kenplayer_width']);
+    }
+    
+    if (isset($input['kenplayer_height'])) {
+        $validated['kenplayer_height'] = absint($input['kenplayer_height']);
+    }
+    
+    return $validated;
 }
 
 /**
@@ -278,11 +287,6 @@ if (!function_exists("kenplayer_config")) {
             wp_die(__('You do not have sufficient permissions to access this page.', 'kenplayer-transformer'));
         }
         
-        // Handle form submission with nonce verification
-        if (isset($_POST['submit']) && check_admin_referer('kenplayer_config_nonce')) {
-            // Process form data securely
-            kenplayer_process_admin_form();
-        }
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('KenPlayer Transformer Settings', 'kenplayer-transformer'); ?></h1>
@@ -293,7 +297,6 @@ if (!function_exists("kenplayer_config")) {
                 <?php 
                 settings_fields('kenplayer_config');
                 do_settings_sections('kenplayer_config');
-                wp_nonce_field('kenplayer_config_nonce');
                 
                 // Check for cURL and HTTP capabilities
                 $curl_installed = function_exists('curl_init');

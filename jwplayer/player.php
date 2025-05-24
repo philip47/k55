@@ -44,17 +44,44 @@ if (!preg_match('/^[A-Za-z0-9\-_\.]+$/', $video)) {
 }
 
 function curl($url, $referer, $type = null) {
-    $agent = ($type != null && $type == 'movil') ? 'Mozilla/5.0 (Linux; U; Android 4.0; en-us; GT-I9300 Build/IMM76D)' : 'Mozilla/5.0(Windows;U;WindowsNT5.0;en-US;rv:1.4)Gecko/20030624Netscape/7.1(ax)';
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_USERAGENT, $agent);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    curl_setopt($ch, CURLOPT_REFERER, $referer);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
-    $page = curl_exec($ch);
-    curl_close($ch);
-    return $page;
+    // Use WordPress HTTP API for security
+    $user_agent = ($type === 'movil') 
+        ? 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
+        : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+    
+    // Validate URL
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return false;
+    }
+    
+    // Check if URL is from allowed domains
+    $allowed_domains = array('xvideos.com', 'pornhub.com', 'redtube.com', 'youporn.com', 'xhamster.com');
+    $parsed_url = parse_url($url);
+    $domain = isset($parsed_url['host']) ? preg_replace('/^www\./', '', $parsed_url['host']) : '';
+    
+    if (!in_array($domain, $allowed_domains)) {
+        return false;
+    }
+    
+    $args = array(
+        'timeout' => 15,
+        'user-agent' => $user_agent,
+        'sslverify' => true,
+        'headers' => array(
+            'Referer' => $referer,
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language' => 'en-US,en;q=0.5',
+            'Accept-Encoding' => 'gzip, deflate'
+        )
+    );
+    
+    $response = wp_remote_get($url, $args);
+    
+    if (is_wp_error($response)) {
+        return false;
+    }
+    
+    return wp_remote_retrieve_body($response);
 }
 
 function getstring($string, $start, $end) {
@@ -85,10 +112,10 @@ function obtenerVideo($tubeserver, $video){
     // Handle both old numeric format (12345) and new alphanumeric format (ohlvebk93b7)
     if (strpos($video, '.') === false && is_numeric($video)) {
         // Old format: numeric ID
-        $video_url = "https://www.xvideos.com/video".$video."/videoxxx";
+        $video_url = "https://www.xvideos.com/video".$video."/xvideosx";
     } else {
         // New format: alphanumeric with or without dot
-        $video_url = "https://www.xvideos.com/video.".$video."/videoxxx";
+        $video_url = "https://www.xvideos.com/video.".$video."/xvideosx";
     }
     
     //$str = @file_get_contents($video_url, false, stream_context_create($userAgent) );
@@ -100,7 +127,7 @@ function obtenerVideo($tubeserver, $video){
     $VideoUrlHD=getstring($str,"html5player.setVideoHLS('","');");
     if($VideoUrlHigh!=""){$mp4=$VideoUrlHigh;} else {$mp4=$VideoUrlLow;}
 	if($VideoUrlHD!=""){$mp4=$VideoUrlHD;}
-	/* using toolshot 
+	/* using toolshot - DISABLED FOR SECURITY
 	$toolshot_url = (strpos($video, '.') === false && is_numeric($video)) 
 	    ? "http://player1.toolshot.com/?url=http://www.xvideos.com/video".$video."/"
 	    : "http://player1.toolshot.com/?url=http://www.xvideos.com/video.".$video."/";

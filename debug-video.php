@@ -97,13 +97,22 @@ echo "</div>";
 // Test direct player access
 echo "<div style='border: 2px solid #333; margin: 20px 0; padding: 15px; background: #fff3cd;'>";
 echo "<h3>Direct Player Test</h3>";
-echo "<p>Test the player directly with a sample XVideos ID:</p>";
+echo "<p>Test both players directly with a sample XVideos ID:</p>";
 $test_id = "ohlvebk93b7";
 $test_nonce = wp_create_nonce('kenplayer_video_' . $test_id);
+
+// VideoJS Player
 $direct_player_url = plugins_url("player/player.php", __FILE__) . 
     "?tubeserver=xvideos&id=" . urlencode($test_id) . 
     "&nonce=" . urlencode($test_nonce);
-echo "<p><a href='" . esc_url($direct_player_url) . "' target='_blank' style='background: #007cba; color: white; padding: 10px 15px; text-decoration: none; border-radius: 3px;'>Test Player Directly</a></p>";
-echo "<p><small>This will open the player in a new tab. If you see a video player, the fix is working!</small></p>";
+echo "<p><a href='" . esc_url($direct_player_url) . "' target='_blank' style='background: #007cba; color: white; padding: 10px 15px; text-decoration: none; border-radius: 3px; margin-right: 10px;'>Test VideoJS Player</a>";
+
+// JWPlayer
+$jwplayer_url = plugins_url("jwplayer/player.php", __FILE__) . 
+    "?tubeserver=xvideos&id=" . urlencode($test_id) . 
+    "&nonce=" . urlencode($test_nonce);
+echo "<a href='" . esc_url($jwplayer_url) . "' target='_blank' style='background: #28a745; color: white; padding: 10px 15px; text-decoration: none; border-radius: 3px;'>Test JWPlayer</a></p>";
+
+echo "<p><small>These will open the players in new tabs. If you see video players, the fixes are working!</small></p>";
 echo "</div>";
 ?>
