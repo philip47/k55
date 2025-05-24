@@ -63,12 +63,15 @@ All notable changes to KenPlayer Transformer will be documented in this file.
   - Lack of CSRF protection
   - XSS vulnerabilities in admin interface
   - SQL injection possibilities
+  - **NEW**: "Security check failed" error - added nonce verification to all player files
+  - **NEW**: Insecure external API calls in drive players replaced with WordPress HTTP API
 
 - **Authentication & Authorization**
   - Proper nonce verification for all sensitive operations
   - Enhanced user capability checks
   - Secure license activation process
   - Protected admin functions
+  - **NEW**: Nonce verification in all player files (player.php, player-direct.php, player-drive.php)
 
 ### Performance Improvements
 - **Caching Strategy**
