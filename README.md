@@ -82,11 +82,14 @@ A WordPress plugin that transforms embedded video players from adult video sites
 
 ## Supported Video Sites
 
-- XVideos
-- PornHub
-- RedTube
-- YouPorn
-- XHamster (limited support)
+- **XVideos** - All URL formats including new alphanumeric IDs (video.abc123, video123456)
+- **PornHub** - Both viewkey and embed URLs
+- **RedTube** - Standard video URLs
+- **YouPorn** - Watch URLs with video IDs
+- **XHamster** - Videos and movies URLs
+- **Direct Video Files** - MP4, FLV, WebM, M4V
+- **Google Drive** - Shared video files
+- **YouTube** - Standard video URLs
 
 ## Shortcode Usage
 

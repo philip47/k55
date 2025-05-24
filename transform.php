@@ -611,7 +611,7 @@ function shortcode_videos_transformer($atts, $link = null) {
         return '<div style="border: 2px dashed #ccc; padding: 15px; margin: 10px 0; background: #f9f9f9;">
             <strong>KenPlayer Shortcode Usage:</strong><br>
             <code>[kenplayer url="VIDEO_URL"]</code><br>
-            <small>Supported sites: XVideos, Pornhub, RedTube, YouPorn, direct MP4/FLV files, Google Drive, YouTube</small><br>
+            <small>Supported sites: XVideos, Pornhub, RedTube, YouPorn, XHamster, direct MP4/FLV/WebM files, Google Drive, YouTube</small><br>
             <small>Optional parameters: width="735" height="400"</small>
         </div>';
     }
@@ -636,22 +636,46 @@ function shortcode_videos_transformer($atts, $link = null) {
     
     // Parse video URL to extract service and video ID
     if (stristr($link, 'xvideos.com')) {
-        preg_match('/\/\/www.xvideos.com\/video([0-9]+)\//', $link, $idxvideos);
-        $tubeserver = 'xvideos';
-        $video = isset($idxvideos[1]) ? $idxvideos[1] : '';
+        // Updated regex to handle both numeric and alphanumeric video IDs
+        // Matches: /video123456/ or /video.abc123def/ or /video123456/title
+        if (preg_match('/\/video\.?([a-zA-Z0-9_\-\.]+)(?:\/|$)/', $link, $idxvideos)) {
+            $tubeserver = 'xvideos';
+            $video = $idxvideos[1];
+        }
     } elseif (stristr($link, 'pornhub.com')) {
-        $idpornhub = substr($link, strpos($link, '?viewkey=') + 9);
-        $tubeserver = 'pornhub';
-        $video = $idpornhub;
+        // Handle both viewkey parameter and embed URLs
+        if (strpos($link, '?viewkey=') !== false) {
+            $viewkey_pos = strpos($link, '?viewkey=') + 9;
+            $video_id = substr($link, $viewkey_pos);
+            // Remove any additional parameters
+            if (strpos($video_id, '&') !== false) {
+                $video_id = substr($video_id, 0, strpos($video_id, '&'));
+            }
+            $tubeserver = 'pornhub';
+            $video = $video_id;
+        } elseif (preg_match('/\/embed\/([a-zA-Z0-9]+)/', $link, $matches)) {
+            $tubeserver = 'pornhub';
+            $video = $matches[1];
+        }
     } elseif (stristr($link, 'redtube.com')) {
-        $idredtube = substr($link, strpos($link, 'redtube.com/') + 12);
-        $tubeserver = 'redtube';
-        $video = $idredtube;
+        // Handle RedTube URLs: /123456 or /123456/title
+        if (preg_match('/redtube\.com\/([0-9]+)(?:\/|$)/', $link, $matches)) {
+            $tubeserver = 'redtube';
+            $video = $matches[1];
+        }
     } elseif (stristr($link, 'youporn.com') || stristr($link, 'youporngay.com')) {
-        preg_match('/\/watch\/([0-9]+)\//', $link, $idyouporn);
-        $tubeserver = 'youporn';
-        $video = isset($idyouporn[1]) ? $idyouporn[1] : '';
-    } elseif (endsWith($link, '.mp4') || endsWith($link, '.flv')) {
+        // Handle YouPorn URLs: /watch/123456/ or /watch/123456/title
+        if (preg_match('/\/watch\/([0-9]+)(?:\/|$)/', $link, $idyouporn)) {
+            $tubeserver = 'youporn';
+            $video = $idyouporn[1];
+        }
+    } elseif (stristr($link, 'xhamster.com')) {
+        // Add XHamster support: /videos/title-123456 or /movies/123456/title
+        if (preg_match('/\/(?:videos|movies)\/(?:[^\/]*-)?([0-9]+)(?:\/|$)/', $link, $matches)) {
+            $tubeserver = 'xhamster';
+            $video = $matches[1];
+        }
+    } elseif (endsWith($link, '.mp4') || endsWith($link, '.flv') || endsWith($link, '.webm') || endsWith($link, '.m4v')) {
         if (get_option('kenplayer_jwplayer') == 'yes') {
             $urlPlayer = plugins_url("jwplayer/player-direct.php", __FILE__) . 
                 "?tubeserver=" . urlencode(base64_encode($link));
@@ -702,10 +726,16 @@ function shortcode_videos_transformer($atts, $link = null) {
     }
     
     // Debug: Show what URL was provided and why it failed
+    $debug_info = '';
+    if (WP_DEBUG) {
+        $debug_info = '<br><small>Debug: tubeserver="' . esc_html($tubeserver) . '", video="' . esc_html($video) . '"</small>';
+    }
+    
     return '<div style="border: 2px solid #ff6b6b; padding: 15px; margin: 10px 0; background: #ffe6e6; color: #d63031;">
         <strong>KenPlayer Error:</strong> Unsupported video URL<br>
         <small>URL provided: ' . esc_html($link) . '</small><br>
-        <small>Supported sites: XVideos, Pornhub, RedTube, YouPorn, direct MP4/FLV files, Google Drive, YouTube</small>
+        <small>Supported sites: XVideos, Pornhub, RedTube, YouPorn, XHamster, direct MP4/FLV/WebM files, Google Drive, YouTube</small>
+        ' . $debug_info . '
     </div>';
 }
 

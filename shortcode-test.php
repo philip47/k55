@@ -55,11 +55,12 @@ if (!defined('ABSPATH')) {
         
         <h3>Supported Video Sites:</h3>
         <ul>
-            <li>XVideos (e.g., https://www.xvideos.com/video12345/title)</li>
+            <li>XVideos (e.g., https://www.xvideos.com/video12345/title or https://www.xvideos.com/video.abc123/title)</li>
             <li>Pornhub (e.g., https://www.pornhub.com/view_video.php?viewkey=abc123)</li>
             <li>RedTube (e.g., https://www.redtube.com/12345)</li>
             <li>YouPorn (e.g., https://www.youporn.com/watch/12345/title)</li>
-            <li>Direct MP4/FLV files (e.g., https://example.com/video.mp4)</li>
+            <li>XHamster (e.g., https://www.xhamster.com/videos/title-12345)</li>
+            <li>Direct MP4/FLV/WebM files (e.g., https://example.com/video.mp4)</li>
             <li>Google Drive videos</li>
             <li>YouTube videos</li>
         </ul>
@@ -83,10 +84,18 @@ if (!defined('ABSPATH')) {
     </div>
 
     <div class="test-section">
-        <h2>Test 2: Sample XVideos URL</h2>
+        <h2>Test 2: Sample XVideos URL (Numeric ID)</h2>
         <p><strong>Shortcode:</strong> <code>[kenplayer url="https://www.xvideos.com/video12345/sample-video"]</code></p>
         <div style="border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
             <?php echo do_shortcode('[kenplayer url="https://www.xvideos.com/video12345/sample-video"]'); ?>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2b: XVideos URL (Alphanumeric ID)</h2>
+        <p><strong>Shortcode:</strong> <code>[kenplayer url="https://www.xvideos.com/video.ohlvebk93b7/sample-title"]</code></p>
+        <div style="border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
+            <?php echo do_shortcode('[kenplayer url="https://www.xvideos.com/video.ohlvebk93b7/sample-title"]'); ?>
         </div>
     </div>
 
