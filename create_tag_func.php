@@ -80,7 +80,6 @@ if ($activation['is_valid']) {
     
     if (get_option('kenplayer_activation') == 'yes') {
         add_filter('the_content', 'transformer_iframe');
-        add_filter("mce_buttons", "register_kenplayer_button");
         
         if (function_exists("tubeace_video_player")) {
             add_filter('tubeace_video_player', 'transformer_iframe', 99, 1);
