@@ -2,6 +2,23 @@
 
 All notable changes to KenPlayer Transformer will be documented in this file.
 
+## [3.0.1] - 2025-05-24
+
+### CRITICAL FIXES
+- **FIXED**: JWPlayer XVideos URL construction (corrected from /videoxxx to /xvideosx)
+- **FIXED**: Settings page "link expired" error by removing conflicting nonce verification
+- **FIXED**: Video display issue - videos now appear correctly for both players
+- **FIXED**: XVideos URL validation to allow dots in video IDs (new format: video.ohlvebk93b7)
+- **FIXED**: XVideos URL construction for both old numeric (12345) and new alphanumeric formats
+- **UPDATED**: Video ID validation regex from `/^[A-Za-z0-9\-_]+$/` to `/^[A-Za-z0-9\-_\.]+$/`
+- **ENHANCED**: Both VideoJS and JWPlayer now properly handle XVideos new URL format
+- **DISABLED**: Insecure toolshot functionality in JWPlayer for security
+
+### Testing
+- **ADDED**: test-jwplayer-fix.php for comprehensive JWPlayer testing
+- **ENHANCED**: debug-video.php to test both VideoJS and JWPlayer
+- **ADDED**: test-video-fix.php for quick verification
+
 ## [3.0.0] - 2024-12-19
 
 ### Added
