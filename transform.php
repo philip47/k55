@@ -468,7 +468,7 @@ function transformer_iframe($content) {
         
         // Validate video ID format
         if (empty($video) || !preg_match('/^[A-Za-z0-9\-_]+$/', $video)) {
-            set_transient($cache_key, $content, 5 * MINUTE_IN_SECONDS);
+            // Cache functionality removed to reduce database space
             return $content;
         }
         
