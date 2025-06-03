@@ -4,7 +4,7 @@
  */
 
 // Load WordPress
-$parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
+$parse_uri = explode( 'wp-content', isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : __FILE__ );
 require_once( $parse_uri[0] . 'wp-load.php' );
 
 echo "<h2>KenPlayer Nonce Fix Test</h2>";

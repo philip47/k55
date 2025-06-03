@@ -19,7 +19,7 @@ if(!ctype_alnum($tubeserver) || empty($tubeserver)) {
 }
 
 // Load WordPress if the path exists
-$parse_uri = explode('wp-content', $_SERVER['SCRIPT_FILENAME']);
+$parse_uri = explode('wp-content', isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : __FILE__);
 if (isset($parse_uri[0]) && file_exists($parse_uri[0] . 'wp-load.php')) {
   require_once($parse_uri[0] . 'wp-load.php');
 } else {

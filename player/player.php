@@ -43,13 +43,8 @@ if (!preg_match('/^[A-Za-z0-9\-_\.]+$/', $video)) {
     wp_die('Invalid video ID');
 }
 
-// Check for cached results first
-$cache_key = 'video_' . $tubeserver . '_' . $video;
-$cached_results = get_transient($cache_key);
-
-if ($cached_results !== false) {
-    $resultados = $cached_results;
-} else {
+// Cache functionality removed to reduce database space
+{
     function secure_http_request($url, $referer = '', $type = null) {
         // Validate URL
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
@@ -173,10 +168,7 @@ if ($cached_results !== false) {
 
     $resultados = obtenerVideo($tubeserver, $video);
     
-    // Cache results for 3 hours if successful
-    if ($resultados) {
-        set_transient($cache_key, $resultados, 3 * HOUR_IN_SECONDS);
-    }
+    // Cache functionality removed to reduce database space
 }
 
 // Don't redeclare the endsWith function if it already exists

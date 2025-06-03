@@ -1,5 +1,5 @@
 <?php
-$parse_uri = explode( 'wp-content', $_SERVER['SCRIPT_FILENAME'] );
+$parse_uri = explode( 'wp-content', isset($_SERVER['SCRIPT_FILENAME']) ? $_SERVER['SCRIPT_FILENAME'] : __FILE__ );
 require_once( $parse_uri[0] . 'wp-load.php' );
 $tubeserver = strip_tags($_GET['tubeserver']);
 $video = strip_tags($_GET['id']);

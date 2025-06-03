@@ -88,12 +88,7 @@ if (!function_exists("ken_connect_curl")) {
             return false;
         }
         
-        // Check cache first
-        $cache_key = 'kenplayer_curl_' . md5($url);
-        $cached_data = get_transient($cache_key);
-        if ($cached_data !== false) {
-            return $cached_data;
-        }
+        // Cache functionality removed to reduce database space
         
         // Use WordPress HTTP API for better security and compatibility
         $args = array(
@@ -115,10 +110,7 @@ if (!function_exists("ken_connect_curl")) {
         
         $data = wp_remote_retrieve_body($response);
         
-        // Cache successful responses for 30 minutes
-        if (!empty($data)) {
-            set_transient($cache_key, $data, 30 * MINUTE_IN_SECONDS);
-        }
+        // Cache functionality removed to reduce database space
         
         return $data;
     }
@@ -193,7 +185,7 @@ function kenplayer_enqueue_scripts() {
     );
     
     // Safely add inline script with proper escaping
-    $host = esc_js(sanitize_text_field($_SERVER['HTTP_HOST']));
+    $host = isset($_SERVER['HTTP_HOST']) ? esc_js(sanitize_text_field($_SERVER['HTTP_HOST'])) : '';
     $inline_script = "
         if (typeof fluidvids !== 'undefined') {
             fluidvids.init({
@@ -443,14 +435,7 @@ function transformer_iframe($content) {
         return $content;
     }
     
-    // Cache the transformation result to avoid repeated processing
-    $content_hash = md5($content);
-    $cache_key = 'kenplayer_transform_' . $content_hash;
-    $cached_result = get_transient($cache_key);
-    
-    if ($cached_result !== false) {
-        return $cached_result;
-    }
+    // Cache functionality removed to reduce database space
     
     // Normalize URLs safely
     $content = str_replace("redtube.com?id=", "redtube.com/?id=", $content);
@@ -469,8 +454,7 @@ function transformer_iframe($content) {
     preg_match($pattern, $content, $result);
     
     if (empty($result)) {
-        // Cache negative result for 5 minutes
-        set_transient($cache_key, $content, 5 * MINUTE_IN_SECONDS);
+        // Cache functionality removed to reduce database space
         return $content;
     }
     
@@ -571,8 +555,7 @@ function transformer_iframe($content) {
         $content = preg_replace('/https?:\/\//', '//', $content);
     }
     
-    // Cache the result for 1 hour
-    set_transient($cache_key, $content, HOUR_IN_SECONDS);
+    // Cache functionality removed to reduce database space
     
     return $content;
 }

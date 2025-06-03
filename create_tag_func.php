@@ -55,7 +55,7 @@ function kenplayer_get_activation_status() {
             }
             
             // Sanitize and validate the hostname
-            $current_host = sanitize_text_field($_SERVER['HTTP_HOST']);
+            $current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field($_SERVER['HTTP_HOST']) : '';
             $xml_site = isset($xml->site) ? (string)$xml->site : '';
             $xml_status = isset($xml->status) ? base64_encode((string)$xml->status) : '';
             $xml_email = isset($xml->email) ? (string)$xml->email : '';
@@ -130,13 +130,7 @@ function kenplayer_remote_request($url, $referer = '', $type = null) {
         return false;
     }
     
-    // Add transient caching to prevent excessive requests
-    $cache_key = 'kenplayer_remote_' . md5($url . $type);
-    $cached_response = get_transient($cache_key);
-    
-    if ($cached_response !== false) {
-        return $cached_response;
-    }
+    // Cache functionality removed to reduce database space
     
     $user_agent = ($type === 'mobile') 
         ? 'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36'
@@ -162,10 +156,7 @@ function kenplayer_remote_request($url, $referer = '', $type = null) {
     
     $body = wp_remote_retrieve_body($response);
     
-    // Cache the response for 1 hour if successful
-    if (!empty($body)) {
-        set_transient($cache_key, $body, HOUR_IN_SECONDS);
-    }
+    // Cache functionality removed to reduce database space
     
     return $body;
 }
@@ -180,8 +171,8 @@ function save_ken_transformer_importer_pro_connect() {
     // Sanitize inputs
     $user = sanitize_email($_POST['ken_transformer_license_key_ok']);
     $order_code = sanitize_text_field($_POST['ken_transformer_order_code']);
-    $site = sanitize_text_field($_SERVER['HTTP_HOST']);
-    $query = sanitize_text_field($_SERVER['REQUEST_URI']);
+    $site = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field($_SERVER['HTTP_HOST']) : '';
+    $query = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field($_SERVER['REQUEST_URI']) : '';
     
     // Validate email
     if (!is_email($user)) {

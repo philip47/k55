@@ -1078,9 +1078,9 @@ $linkdown = Drive($URL);
 	
 	//status
 	$protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == "on") ? "https" : "http";
-	$shot = "https://drive.google.com/vt?".$_SERVER["QUERY_STRING"];
-	$sharing = $protocol."://".$_SERVER["HTTP_HOST"].$_SERVER["REQUEST_URI"];
-	if(preg_match("/errorcode=100/", $response_data) && strlen($_SERVER["QUERY_STRING"])!= "28"){
+	$shot = "https://drive.google.com/vt?" . (isset($_SERVER["QUERY_STRING"]) ? $_SERVER["QUERY_STRING"] : '');
+	$sharing = $protocol . "://" . (isset($_SERVER["HTTP_HOST"]) ? $_SERVER["HTTP_HOST"] : '') . (isset($_SERVER["REQUEST_URI"]) ? $_SERVER["REQUEST_URI"] : '');
+	if(preg_match("/errorcode=100/", $response_data) && strlen(isset($_SERVER["QUERY_STRING"]) ? $_SERVER["QUERY_STRING"] : '') != "28"){
 		$title = "Introducir el c贸digo de identificaci贸n de v铆deo correcta.";
 	} elseif(preg_match("/errorcode=100/", $response_data)) {
 		$title = "Usted no tiene acceso a un video";

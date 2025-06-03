@@ -27,7 +27,7 @@ if (get_option('ken_transformer_importer_connect_status')) {
             $site = isset($xml->site) ? $xml->site : '';
             
             // Sanitize the server hostname for comparison
-            $current_host = sanitize_text_field($_SERVER['HTTP_HOST']);
+            $current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field($_SERVER['HTTP_HOST']) : '';
             
             if (($site == $current_host) && ($status == "YWN0aXZhdGVk")) {
                 echo "<div id=\"message\" class=\"updated fade\" style='color:blue;'><p>Activated</p></div>\n";

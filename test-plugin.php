@@ -49,11 +49,8 @@ function kenplayer_run_tests() {
     $results['security_functions'] = function_exists('wp_verify_nonce') && function_exists('sanitize_text_field');
     
     // Test 8: Test caching
-    $cache_key = 'kenplayer_test_' . time();
-    set_transient($cache_key, 'test_data', 60);
-    $cached_data = get_transient($cache_key);
-    $results['caching_works'] = ($cached_data === 'test_data');
-    delete_transient($cache_key);
+    // Cache functionality removed to reduce database space
+    $results['caching_works'] = 'Cache disabled';
     
     return $results;
 }
